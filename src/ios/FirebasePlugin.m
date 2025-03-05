@@ -1783,7 +1783,7 @@ static NSMutableArray* pendingGlobalJS = nil;
 
 -(BOOL)isCrashlyticsEnabled{
     return NO;
-    return [self getPreferenceFlag:FIREBASE_CRASHLYTICS_COLLECTION_ENABLED];
+    // return [self getPreferenceFlag:FIREBASE_CRASHLYTICS_COLLECTION_ENABLED];
 }
 
 -(void)didCrashOnPreviousExecution:(CDVInvokedUrlCommand *)command {
