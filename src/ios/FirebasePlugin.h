@@ -79,14 +79,14 @@
 - (void)initiateOnDeviceConversionMeasurement:(CDVInvokedUrlCommand*)command;
 
 // Crashlytics
-- (void)setCrashlyticsCollectionEnabled:(CDVInvokedUrlCommand*)command;
-- (void)isCrashlyticsCollectionEnabled:(CDVInvokedUrlCommand*)command;
+// - (void)setCrashlyticsCollectionEnabled:(CDVInvokedUrlCommand*)command;
+// - (void)isCrashlyticsCollectionEnabled:(CDVInvokedUrlCommand*)command;
 - (void)didCrashOnPreviousExecution:(CDVInvokedUrlCommand *)command;
-- (void)setCrashlyticsCustomKey:(CDVInvokedUrlCommand *)command;
+// - (void)setCrashlyticsCustomKey:(CDVInvokedUrlCommand *)command;
 - (void)logError:(CDVInvokedUrlCommand*)command;
 - (void)logMessage:(CDVInvokedUrlCommand*)command;
 - (void)sendCrash:(CDVInvokedUrlCommand*)command;
-- (void)setCrashlyticsUserId:(CDVInvokedUrlCommand*)command;
+// - (void)setCrashlyticsUserId:(CDVInvokedUrlCommand*)command;
 
 // Remote config
 - (void)fetch:(CDVInvokedUrlCommand*)command;
@@ -138,7 +138,7 @@
 - (void) _logError: (NSString*)msg;
 - (void) _logInfo: (NSString*)msg;
 - (void) _logMessage: (NSString*)msg;
-- (BOOL) _shouldEnableCrashlytics;
+// - (BOOL) _shouldEnableCrashlytics;
 - (NSNumber*) saveAuthCredential: (FIRAuthCredential *) authCredential;
 - (void)executeGlobalJavascript: (NSString*)jsString;
 

@@ -346,10 +346,10 @@ end
             googlePlist["FIREBASE_PERFORMANCE_COLLECTION_ENABLED"] = (pluginVariables['FIREBASE_PERFORMANCE_COLLECTION_ENABLED'] !== "false" ? "true" : "false") ;
             googlePlistModified = true;
         }
-        if(typeof pluginVariables['FIREBASE_CRASHLYTICS_COLLECTION_ENABLED'] !== 'undefined'){
-            googlePlist["FirebaseCrashlyticsCollectionEnabled"] = (pluginVariables['FIREBASE_CRASHLYTICS_COLLECTION_ENABLED'] !== "false" ? "true" : "false") ;
-            googlePlistModified = true;
-        }
+        // if(typeof pluginVariables['FIREBASE_CRASHLYTICS_COLLECTION_ENABLED'] !== 'undefined'){
+        //     googlePlist["FirebaseCrashlyticsCollectionEnabled"] = (pluginVariables['FIREBASE_CRASHLYTICS_COLLECTION_ENABLED'] !== "false" ? "true" : "false") ;
+        //     googlePlistModified = true;
+        // }
         if (typeof pluginVariables['GOOGLE_ANALYTICS_ADID_COLLECTION_ENABLED'] !== 'undefined') {
             googlePlist["GOOGLE_ANALYTICS_ADID_COLLECTION_ENABLED"] = (pluginVariables['GOOGLE_ANALYTICS_ADID_COLLECTION_ENABLED'] !== "false" ? "true" : "false");
             googlePlistModified = true;

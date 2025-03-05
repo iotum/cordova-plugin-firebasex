@@ -26,8 +26,8 @@
 
 static NSString*const LOG_TAG = @"FirebasePlugin[native]";
 static NSInteger const kNotificationStackSize = 32;
-static NSString*const FIREBASE_CRASHLYTICS_COLLECTION_ENABLED = @"FIREBASE_CRASHLYTICS_COLLECTION_ENABLED"; //preference
-static NSString*const FirebaseCrashlyticsCollectionEnabled = @"FirebaseCrashlyticsCollectionEnabled"; //plist
+// static NSString*const FIREBASE_CRASHLYTICS_COLLECTION_ENABLED = @"FIREBASE_CRASHLYTICS_COLLECTION_ENABLED"; //preference
+// static NSString*const FirebaseCrashlyticsCollectionEnabled = @"FirebaseCrashlyticsCollectionEnabled"; //plist
 static NSString*const FIREBASE_ANALYTICS_COLLECTION_ENABLED = @"FIREBASE_ANALYTICS_COLLECTION_ENABLED";
 static NSString*const FIREBASE_PERFORMANCE_COLLECTION_ENABLED = @"FIREBASE_PERFORMANCE_COLLECTION_ENABLED";
 
@@ -95,9 +95,9 @@ static NSMutableArray* pendingGlobalJS = nil;
             [self setPreferenceFlag:FIREBASE_PERFORMANCE_COLLECTION_ENABLED flag:YES];
         }
 
-        if([self getGooglePlistFlagWithDefaultValue:FirebaseCrashlyticsCollectionEnabled defaultValue:YES]){
-            [self setPreferenceFlag:FIREBASE_CRASHLYTICS_COLLECTION_ENABLED flag:YES];
-        }
+        // if([self getGooglePlistFlagWithDefaultValue:FirebaseCrashlyticsCollectionEnabled defaultValue:YES]){
+        //     [self setPreferenceFlag:FIREBASE_CRASHLYTICS_COLLECTION_ENABLED flag:YES];
+        // }
 
         if([self getGooglePlistFlagWithDefaultValue:GOOGLE_ANALYTICS_ADID_COLLECTION_ENABLED defaultValue:YES]){
             [self setPreferenceFlag:GOOGLE_ANALYTICS_ADID_COLLECTION_ENABLED flag:YES];
@@ -1754,34 +1754,35 @@ static NSMutableArray* pendingGlobalJS = nil;
  * Crashlytics
  */
 
-- (void)setCrashlyticsCollectionEnabled:(CDVInvokedUrlCommand *)command {
-     [self.commandDelegate runInBackground:^{
-         @try {
-             BOOL enabled = [[command argumentAtIndex:0] boolValue];
-             CDVPluginResult* pluginResult;
-             [[FIRCrashlytics crashlytics] setCrashlyticsCollectionEnabled:enabled];
-             [self setPreferenceFlag:FIREBASE_CRASHLYTICS_COLLECTION_ENABLED flag:enabled];
-             pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
+// - (void)setCrashlyticsCollectionEnabled:(CDVInvokedUrlCommand *)command {
+//      [self.commandDelegate runInBackground:^{
+//          @try {
+//              BOOL enabled = [[command argumentAtIndex:0] boolValue];
+//              CDVPluginResult* pluginResult;
+//              [[FIRCrashlytics crashlytics] setCrashlyticsCollectionEnabled:enabled];
+//              [self setPreferenceFlag:FIREBASE_CRASHLYTICS_COLLECTION_ENABLED flag:enabled];
+//              pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
 
-             [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
-         }@catch (NSException *exception) {
-             [self handlePluginExceptionWithContext:exception :command];
-         }
-     }];
-}
+//              [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+//          }@catch (NSException *exception) {
+//              [self handlePluginExceptionWithContext:exception :command];
+//          }
+//      }];
+// }
 
-- (void)isCrashlyticsCollectionEnabled:(CDVInvokedUrlCommand*)command{
-    [self.commandDelegate runInBackground:^{
-        @try {
-            CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:[self isCrashlyticsEnabled]];
-            [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
-        }@catch (NSException *exception) {
-            [self handlePluginExceptionWithContext:exception :command];
-        }
-    }];
-}
+// - (void)isCrashlyticsCollectionEnabled:(CDVInvokedUrlCommand*)command{
+//     [self.commandDelegate runInBackground:^{
+//         @try {
+//             CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:[self isCrashlyticsEnabled]];
+//             [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+//         }@catch (NSException *exception) {
+//             [self handlePluginExceptionWithContext:exception :command];
+//         }
+//     }];
+// }
 
 -(BOOL)isCrashlyticsEnabled{
+    return NO;
     return [self getPreferenceFlag:FIREBASE_CRASHLYTICS_COLLECTION_ENABLED];
 }
 
@@ -1827,12 +1828,12 @@ static NSMutableArray* pendingGlobalJS = nil;
                     [customFrames addObject:customFrame];
                 }
                 exceptionModel.stackTrace = customFrames;
-                [[FIRCrashlytics crashlytics] recordExceptionModel:exceptionModel];
+                // [[FIRCrashlytics crashlytics] recordExceptionModel:exceptionModel];
             }else{
                 //TODO detect and handle non-stack userInfo and pass to recordError
                 NSMutableDictionary* userInfo = [[NSMutableDictionary alloc] init];
                 NSError *error = [NSError errorWithDomain:errorMessage code:0 userInfo:userInfo];
-                [[FIRCrashlytics crashlytics] recordError:error];
+                // [[FIRCrashlytics crashlytics] recordError:error];
             }
             [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
         } @catch (NSException *exception) {
@@ -1850,7 +1851,7 @@ static NSMutableArray* pendingGlobalJS = nil;
             if(![self isCrashlyticsEnabled]){
                 pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Cannot log message - Crashlytics collection is disabled"];
             }else if(message){
-                [[FIRCrashlytics crashlytics] logWithFormat:@"%@", message];
+                // [[FIRCrashlytics crashlytics] logWithFormat:@"%@", message];
             }
             [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
         }@catch (NSException *exception) {
@@ -1859,43 +1860,43 @@ static NSMutableArray* pendingGlobalJS = nil;
     }];
 }
 
-- (void)setCrashlyticsCustomKey:(CDVInvokedUrlCommand*)command{
-    [self.commandDelegate runInBackground:^{
-        @try {
-            NSString* key = [command argumentAtIndex:0 withDefault:@""];
-            NSString* value = [command argumentAtIndex:1 withDefault:@""];
-            CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
+// - (void)setCrashlyticsCustomKey:(CDVInvokedUrlCommand*)command{
+//     [self.commandDelegate runInBackground:^{
+//         @try {
+//             NSString* key = [command argumentAtIndex:0 withDefault:@""];
+//             NSString* value = [command argumentAtIndex:1 withDefault:@""];
+//             CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
 
-            if(![self isCrashlyticsEnabled]){
-                pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Cannot set custom key/valuee - Crashlytics collection is disabled"];
-            }else {
-                [[FIRCrashlytics crashlytics] setCustomValue: value forKey: key];
-            }
-            [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
-        }@catch (NSException *exception) {
-            [self handlePluginExceptionWithContext:exception :command];
-        }
-    }];
-}
+//             if(![self isCrashlyticsEnabled]){
+//                 pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Cannot set custom key/valuee - Crashlytics collection is disabled"];
+//             }else {
+//                 [[FIRCrashlytics crashlytics] setCustomValue: value forKey: key];
+//             }
+//             [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+//         }@catch (NSException *exception) {
+//             [self handlePluginExceptionWithContext:exception :command];
+//         }
+//     }];
+// }
 
 - (void)sendCrash:(CDVInvokedUrlCommand*)command{
     assert(NO);
 }
 
-- (void)setCrashlyticsUserId:(CDVInvokedUrlCommand *)command {
-    @try {
-        NSString* userId = [command.arguments objectAtIndex:0];
-        CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
-        if(![self isCrashlyticsEnabled]){
-            pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Cannot set user ID - Crashlytics collection is disabled"];
-        }else{
-            [[FIRCrashlytics crashlytics] setUserID:userId];
-        }
-        [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
-    }@catch (NSException *exception) {
-        [self handlePluginExceptionWithContext:exception :command];
-    }
-}
+// - (void)setCrashlyticsUserId:(CDVInvokedUrlCommand *)command {
+//     @try {
+//         NSString* userId = [command.arguments objectAtIndex:0];
+//         CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
+//         if(![self isCrashlyticsEnabled]){
+//             pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Cannot set user ID - Crashlytics collection is disabled"];
+//         }else{
+//             [[FIRCrashlytics crashlytics] setUserID:userId];
+//         }
+//         [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+//     }@catch (NSException *exception) {
+//         [self handlePluginExceptionWithContext:exception :command];
+//     }
+// }
 
 /*
  * Remote config
