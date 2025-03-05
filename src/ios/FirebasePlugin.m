@@ -1794,7 +1794,7 @@ static NSMutableArray* pendingGlobalJS = nil;
             if(![self isCrashlyticsEnabled]){
                 pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Cannot query didCrashOnPreviousExecution - Crashlytics collection is disabled"];
             } else {
-                pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:[[FIRCrashlytics crashlytics] didCrashDuringPreviousExecution]];
+                // pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsBool:[[FIRCrashlytics crashlytics] didCrashDuringPreviousExecution]];
             }
 
             [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
@@ -1821,13 +1821,13 @@ static NSMutableArray* pendingGlobalJS = nil;
                 NSString* message = errorMessage;
                 NSString* name = @"Uncaught Javascript exception";
                 NSMutableArray *customFrames = [[NSMutableArray alloc] init];
-                FIRExceptionModel *exceptionModel = [FIRExceptionModel exceptionModelWithName:name reason:message];
+                // FIRExceptionModel *exceptionModel = [FIRExceptionModel exceptionModelWithName:name reason:message];
 
-                for (NSDictionary* stackFrame in stackFrames) {
-                    FIRStackFrame *customFrame = [FIRStackFrame stackFrameWithSymbol:stackFrame[@"functionName"] file:stackFrame[@"fileName"] line:(uint32_t) [stackFrame[@"lineNumber"] intValue]];
-                    [customFrames addObject:customFrame];
-                }
-                exceptionModel.stackTrace = customFrames;
+                // for (NSDictionary* stackFrame in stackFrames) {
+                //     FIRStackFrame *customFrame = [FIRStackFrame stackFrameWithSymbol:stackFrame[@"functionName"] file:stackFrame[@"fileName"] line:(uint32_t) [stackFrame[@"lineNumber"] intValue]];
+                //     [customFrames addObject:customFrame];
+                // }
+                // exceptionModel.stackTrace = customFrames;
                 // [[FIRCrashlytics crashlytics] recordExceptionModel:exceptionModel];
             }else{
                 //TODO detect and handle non-stack userInfo and pass to recordError
