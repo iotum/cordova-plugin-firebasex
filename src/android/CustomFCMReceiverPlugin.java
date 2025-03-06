@@ -149,13 +149,14 @@ public class CustomFCMReceiverPlugin {
             Log.d("CustomFCMReceiver", "sendMessage");
             boolean isHandled = false;
 
-            try {
-                Map<String, String> data = bundleToMap(bundle);
-                isHandled = inspectAndHandleMessageData(data);
-            } catch (Exception e) {
-                handleException("sendMessage", e);
-            }
+            // try {
+            //     Map<String, String> data = bundleToMap(bundle);
+            //     isHandled = inspectAndHandleMessageData(data);
+            // } catch (Exception e) {
+            //     handleException("sendMessage", e);
+            // }
 
+            // We do not want to intercept sending a notification to Cordova
             return isHandled;
         }
     }
