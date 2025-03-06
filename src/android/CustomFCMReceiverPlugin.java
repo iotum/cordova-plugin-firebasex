@@ -101,6 +101,7 @@ public class CustomFCMReceiverPlugin {
 
             Bundle callInfo = new Bundle();
             callInfo.putString("from", data.get("callerName"));
+            callInfo.putString("callUrl", data.get("callUrl"));
             tm.addNewIncomingCall(handle, callInfo);
 
             // TODO: Fix the app opening while ringing, verify it works on the background
