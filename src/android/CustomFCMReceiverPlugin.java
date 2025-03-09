@@ -98,25 +98,16 @@ public class CustomFCMReceiverPlugin {
         if (data.containsKey("callType")) {
             isHandled = true;
             Log.d(TAG, "Calling receiveCallFrom");
+            openFacetalkApp();
 
             Bundle callInfo = new Bundle();
             callInfo.putString("from", data.get("callerName"));
             callInfo.putString("callUrl", data.get("callUrl"));
             tm.addNewIncomingCall(handle, callInfo);
 
-            // TODO: Fix the app opening while ringing, verify it works on the background
-            // Make sure the app only opens up when in the background
-            openFacetalkApp();
-            tm.showInCallScreen(true);
+            tm.showInCallScreen(false);
         }
         return isHandled;
-    }
-
-    protected void requestRuntimePermission() {
-        Intent intent = new Intent(applicationContext, PermissionActivity.class);
-        intent.addFlags(
-                Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT | Intent.FLAG_FROM_BACKGROUND);
-        applicationContext.startActivity(intent);
     }
 
     private void openFacetalkApp() {
@@ -124,7 +115,7 @@ public class CustomFCMReceiverPlugin {
             PackageManager packageManager = applicationContext.getPackageManager();
             Intent intent = packageManager.getLaunchIntentForPackage(applicationContext.getPackageName());
             // Intent.FLAG_ACTIVITY_REORDER_TO_FRONT Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_FROM_BACKGROUND);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             applicationContext.startActivity(intent);
         }
     }
@@ -159,38 +150,6 @@ public class CustomFCMReceiverPlugin {
 
             // We do not want to intercept sending a notification to Cordova
             return isHandled;
-        }
-    }
-
-    private class PermissionActivity extends Activity {
-        static final String TAG = "PermissionActivity";
-
-        private static final int REQUEST_PHONE_PERMISSION = 1;
-
-        @Override
-        protected void onCreate(Bundle savedInstanceState) {
-            super.onCreate(savedInstanceState);
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                if (ContextCompat.checkSelfPermission(this,
-                        Manifest.permission.READ_PHONE_NUMBERS) != PackageManager.PERMISSION_GRANTED) {
-                    Log.d(TAG, "Permission not granted");
-                    if (ActivityCompat.shouldShowRequestPermissionRationale(this,
-                            Manifest.permission.READ_PHONE_NUMBERS)) {
-                        Log.d(TAG, "Permission denied by user previously");
-                    } else {
-                        Log.d(TAG, "Requesting permission");
-                        ActivityCompat.requestPermissions(this,
-                                new String[] { Manifest.permission.READ_PHONE_NUMBERS }, REQUEST_PHONE_PERMISSION);
-                    }
-                }
-            }
-        }
-
-        @Override
-        protected void onDestroy() {
-            super.onDestroy();
-            finish(); // Close the activity once permission is handled
         }
     }
 }
