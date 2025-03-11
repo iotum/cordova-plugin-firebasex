@@ -98,14 +98,13 @@ public class CustomFCMReceiverPlugin {
         if (data.containsKey("callType")) {
             isHandled = true;
             Log.d(TAG, "Calling receiveCallFrom");
-            openFacetalkApp();
 
             Bundle callInfo = new Bundle();
             callInfo.putString("from", data.get("callerName"));
             callInfo.putString("callUrl", data.get("callUrl"));
             tm.addNewIncomingCall(handle, callInfo);
-
             tm.showInCallScreen(false);
+            openFacetalkApp();
         }
         return isHandled;
     }
@@ -115,7 +114,8 @@ public class CustomFCMReceiverPlugin {
             PackageManager packageManager = applicationContext.getPackageManager();
             Intent intent = packageManager.getLaunchIntentForPackage(applicationContext.getPackageName());
             // Intent.FLAG_ACTIVITY_REORDER_TO_FRONT Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            // intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT | Intent.FLAG_FROM_BACKGROUND);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_FROM_BACKGROUND);
             applicationContext.startActivity(intent);
         }
     }
