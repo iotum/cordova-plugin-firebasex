@@ -34,6 +34,9 @@
 		<js-module name="FirebasePlugin" src="www/firebase.js">
 			<clobbers target="FirebasePlugin" />
 		</js-module>
+		<config-file target="config.xml" parent="/*">
+			<preference name="GradlePluginGoogleServicesEnabled" value="true" />
+		</config-file>
 		<config-file parent="/*" target="res/xml/config.xml">
 			<preference name="FIREBASE_MESSAGING_IMMEDIATE_PAYLOAD_DELIVERY" value="$FIREBASE_MESSAGING_IMMEDIATE_PAYLOAD_DELIVERY" />
 			<feature name="FirebasePlugin">
