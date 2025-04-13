@@ -1,3 +1,7 @@
+# Version 18.0.7
+* (android) fix: remove Google Services plugin configuration so it doesn't conflict with `cordova-android@14` and use Cordova config to enable the plugin instead.
+  * Resolves [#931](https://github.com/dpa99c/cordova-plugin-firebasex/issues/931)
+
 # Version 18.0.6
 * (ios) bugfix: Force token refresh when calling getClaims
     * Merged from PR [#919](https://github.com/dpa99c/cordova-plugin-firebasex/pull/919)
