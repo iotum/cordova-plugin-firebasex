@@ -199,8 +199,6 @@ static __weak id <UNUserNotificationCenterDelegate> _prevUserNotificationCenterD
 - (void)application:(UIApplication *)application didReceiveRemoteNotification:(NSDictionary *)userInfo
     fetchCompletionHandler:(void (^)(UIBackgroundFetchResult))completionHandler {
 
-    [[NSNotificationCenter defaultCenter] postNotificationName:@"CallkitHandleRemotePushNotification" object:userInfo];
-
     if (!self.isFCMEnabled) {
         return;
     }
