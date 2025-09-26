@@ -21,6 +21,9 @@ import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.CordovaWebView;
 import org.apache.cordova.firebase.FirebasePluginMessageReceiver;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import com.dmarc.cordovacall.MyConnectionService;
 import com.google.firebase.messaging.RemoteMessage;
 
@@ -92,19 +95,30 @@ public class CustomFCMReceiverPlugin {
 
     private boolean inspectAndHandleMessageData(Map<String, String> data) {
         boolean isHandled = false;
-        Log.d(TAG, "Inspecting message.");
+        Log.d(TAG, "inspectAndHandleMessageData");
         Log.d(TAG, data.toString());
 
-        if (data.containsKey("callType")) {
-            isHandled = true;
-            Log.d(TAG, "Calling receiveCallFrom");
+        String callerDataString = data.get("Caller");
+        if (callerDataString != null) {
+            String userName;
+            String callUrl;
+            try {
+                JSONObject callerData = new JSONObject(callerDataString);
+                userName = callerData.getString("Username");
+                callUrl = callerData.getString("CallUrl");
+            } catch (JSONException e) {
+                Log.e(TAG, "Error parsing data.Caller JSON: ", e);
+                return true;
+            }
 
             Bundle callInfo = new Bundle();
-            callInfo.putString("from", data.get("callerName"));
-            callInfo.putString("callUrl", data.get("callUrl"));
+            callInfo.putString("from", userName);
+            callInfo.putString("callUrl", callUrl);
             tm.addNewIncomingCall(handle, callInfo);
             tm.showInCallScreen(false);
             openFacetalkApp();
+
+            isHandled = true;
         }
         return isHandled;
     }
