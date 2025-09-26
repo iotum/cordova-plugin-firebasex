@@ -100,7 +100,17 @@ public class CustomFCMReceiverPlugin {
 
         String callerDataString = data.get("Caller");
         if (callerDataString != null) {
+            String userName;
+            try {
+                JSONObject callerData = new JSONObject(callerDataString);
+                userName = callerData.getString("Username");
+            } catch (JSONException e) {
+                Log.e(TAG, "Error parsing data.Caller JSON: ", e);
+                return true;
+            }
+
             Bundle extras = new Bundle();
+            extras.putString("from", userName); // Required by callkit plugin
             for (Map.Entry<String, String> entry : data.entrySet()) {
                 extras.putString(entry.getKey(), entry.getValue());
             }
