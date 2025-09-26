@@ -153,18 +153,8 @@ export interface FirebasePlugin {
         success?: () => void,
         error?: (err: string) => void
     ): void
-    setCrashlyticsCollectionEnabled(): void
     didCrashOnPreviousExecution(
         success?: (didCrashOnPreviousExecution: boolean) => void,
-        error?: (err: string) => void
-    ): void
-    setCrashlyticsUserId(
-        userId: string
-    ): void
-    setCrashlyticsCustomKey(
-        key: string,
-        value: string | number | boolean,
-        success?: () => void,
         error?: (err: string) => void
     ): void
     sendCrash(): void
