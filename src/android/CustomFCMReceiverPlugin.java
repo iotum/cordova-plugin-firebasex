@@ -100,21 +100,11 @@ public class CustomFCMReceiverPlugin {
 
         String callerDataString = data.get("Caller");
         if (callerDataString != null) {
-            String userName;
-            String callUrl;
-            try {
-                JSONObject callerData = new JSONObject(callerDataString);
-                userName = callerData.getString("Username");
-                callUrl = callerData.getString("CallUrl");
-            } catch (JSONException e) {
-                Log.e(TAG, "Error parsing data.Caller JSON: ", e);
-                return true;
+            Bundle extras = new Bundle();
+            for (Map.Entry<String, String> entry : data.entrySet()) {
+                extras.putString(entry.getKey(), entry.getValue());
             }
-
-            Bundle callInfo = new Bundle();
-            callInfo.putString("from", userName);
-            callInfo.putString("callUrl", callUrl);
-            tm.addNewIncomingCall(handle, callInfo);
+            tm.addNewIncomingCall(handle, extras);
             tm.showInCallScreen(false);
             openFacetalkApp();
 
