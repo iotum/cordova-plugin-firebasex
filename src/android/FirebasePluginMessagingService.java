@@ -27,7 +27,6 @@ import android.graphics.RectF;
 import android.graphics.Paint;
 import android.graphics.Canvas;
 
-import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 

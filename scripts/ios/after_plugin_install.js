@@ -8,6 +8,5 @@ module.exports = function(context) {
     // run command line tool which uploads the debug symbols at build time.
     var xcodeProjectPath = helper.getXcodeProjectPath();
     helper.removeShellScriptBuildPhase(context, xcodeProjectPath);
-    helper.addShellScriptBuildPhase(context, xcodeProjectPath);
     helper.addGoogleTagManagerContainer(context, xcodeProjectPath);
 };
