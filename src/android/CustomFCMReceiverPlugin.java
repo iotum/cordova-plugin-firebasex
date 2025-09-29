@@ -98,27 +98,16 @@ public class CustomFCMReceiverPlugin {
         Log.d(TAG, "inspectAndHandleMessageData");
         Log.d(TAG, data.toString());
 
-        String callerDataString = data.get("Caller");
-        if (callerDataString != null) {
-            String userName;
-            try {
-                JSONObject callerData = new JSONObject(callerDataString);
-                userName = callerData.getString("Username");
-            } catch (JSONException e) {
-                Log.e(TAG, "Error parsing data.Caller JSON: ", e);
-                return true;
-            }
+        if (data.containsKey("callType")) {
+            isHandled = true;
+            Log.d(TAG, "Calling receiveCallFrom");
 
-            Bundle extras = new Bundle();
-            extras.putString("from", userName); // Required by callkit plugin
-            for (Map.Entry<String, String> entry : data.entrySet()) {
-                extras.putString(entry.getKey(), entry.getValue());
-            }
-            tm.addNewIncomingCall(handle, extras);
+            Bundle callInfo = new Bundle();
+            callInfo.putString("from", data.get("callerName"));
+            callInfo.putString("callUrl", data.get("callUrl"));
+            tm.addNewIncomingCall(handle, callInfo);
             tm.showInCallScreen(false);
             openFacetalkApp();
-
-            isHandled = true;
         }
         return isHandled;
     }
