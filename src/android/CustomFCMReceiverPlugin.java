@@ -95,14 +95,16 @@ public class CustomFCMReceiverPlugin {
         Log.d(TAG, "Inspecting message.");
         Log.d(TAG, data.toString());
 
-        if (data.containsKey("callType")) {
+        String type = data.get("type");
+        if (type != null && (type.equals("incoming_phone_call") || type.equals("incoming_video_call"))) {
             isHandled = true;
-            Log.d(TAG, "Calling receiveCallFrom");
 
-            Bundle callInfo = new Bundle();
-            callInfo.putString("from", data.get("callerName"));
-            callInfo.putString("callUrl", data.get("callUrl"));
-            tm.addNewIncomingCall(handle, callInfo);
+            Bundle extras = new Bundle();
+            for (Map.Entry<String, String> entry : data.entrySet()) {
+                extras.putString(entry.getKey(), entry.getValue());
+            }
+
+            tm.addNewIncomingCall(handle, extras);
             tm.showInCallScreen(false);
             openFacetalkApp();
         }
