@@ -16,7 +16,6 @@
 
 	<preference name="FIREBASE_ANALYTICS_COLLECTION_ENABLED" default="true" />
 	<preference name="FIREBASE_PERFORMANCE_COLLECTION_ENABLED" default="true" />
-	<preference name="FIREBASE_CRASHLYTICS_COLLECTION_ENABLED" default="true" />
 	<preference name="FIREBASE_FCM_AUTOINIT_ENABLED" default="true" />
 	<preference name="FIREBASE_ANALYTICS_WITHOUT_ADS" default="false" />
 	<preference name="FIREBASE_MESSAGING_IMMEDIATE_PAYLOAD_DELIVERY" default="false" />
@@ -63,7 +62,6 @@
 			<meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="@string/default_notification_channel_id"/>
 			<meta-data android:name="firebase_analytics_collection_enabled" android:value="$FIREBASE_ANALYTICS_COLLECTION_ENABLED" />
 			<meta-data android:name="firebase_performance_collection_enabled" android:value="$FIREBASE_PERFORMANCE_COLLECTION_ENABLED" />
-			<meta-data android:name="firebase_crashlytics_collection_enabled" android:value="$FIREBASE_CRASHLYTICS_COLLECTION_ENABLED" />
 			<meta-data android:name="firebase_messaging_auto_init_enabled" android:value="$FIREBASE_FCM_AUTOINIT_ENABLED" />
 			<meta-data android:name="google_analytics_adid_collection_enabled" android:value="$GOOGLE_ANALYTICS_ADID_COLLECTION_ENABLED" />
 			<meta-data android:name="google_analytics_default_allow_analytics_storage" android:value="$GOOGLE_ANALYTICS_DEFAULT_ALLOW_ANALYTICS_STORAGE" />
@@ -96,8 +94,6 @@
 		<preference name="ANDROID_FIREBASE_FUNCTIONS_VERSION" default="21.1.0" />
 		<preference name="ANDROID_FIREBASE_IID_VERSION" default="21.1.0" /> <!-- deprecated but required by firebase-messaging -->
 		<preference name="ANDROID_FIREBASE_INSTALLATIONS_VERSION" default="18.0.0" />
-		<preference name="ANDROID_FIREBASE_CRASHLYTICS_VERSION" default="19.4.0" />
-		<preference name="ANDROID_FIREBASE_CRASHLYTICS_NDK_VERSION" default="19.4.0" />
 		<preference name="ANDROID_GSON_VERSION" default="2.11.0" />
 		<preference name="ANDROID_FIREBASE_PERF_GRADLE_PLUGIN_VERSION" default="1.4.2" />
 		<preference name="ANDROID_GRPC_OKHTTP" default="1.68.0" />
@@ -115,8 +111,6 @@
 		<framework src="com.google.firebase:firebase-functions:$ANDROID_FIREBASE_FUNCTIONS_VERSION" />
 		<framework src="com.google.firebase:firebase-iid:$ANDROID_FIREBASE_IID_VERSION" />
 		<framework src="com.google.firebase:firebase-installations:$ANDROID_FIREBASE_INSTALLATIONS_VERSION" />
-		<framework src="com.google.firebase:firebase-crashlytics:$ANDROID_FIREBASE_CRASHLYTICS_VERSION" />
-		<framework src="com.google.firebase:firebase-crashlytics-ndk:$ANDROID_FIREBASE_CRASHLYTICS_NDK_VERSION" />
 		<framework src="com.google.code.gson:gson:$ANDROID_GSON_VERSION" />
 		<framework src="io.grpc:grpc-okhttp:$ANDROID_GRPC_OKHTTP" />
 	</platform>
@@ -186,7 +180,6 @@
 				<pod name="FirebaseRemoteConfig" spec="11.8.0"/>
 				<pod name="FirebaseInAppMessaging" spec="11.8.0-beta"/>
 				<pod name="FirebaseFirestore" spec="11.8.0"/>
-				<pod name="FirebaseCrashlytics" spec="11.8.0"/>
 				<pod name="FirebaseFunctions" spec="11.8.0"/>
 				<pod name="FirebaseInstallations" spec="11.8.0"/>
 				<pod name="GoogleSignIn" spec="7.1.0"/>
