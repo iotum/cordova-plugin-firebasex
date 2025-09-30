@@ -29,6 +29,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.lang.reflect.Method;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 public class CustomFCMReceiverPlugin {
     static final String TAG = "CustomFCMReceiverPlugin";
@@ -90,24 +92,31 @@ public class CustomFCMReceiverPlugin {
         return map;
     }
 
-    private boolean inspectAndHandleMessageData(Map<String, String> data) {
+    private boolean inspectAndHandleMessageData(Map<String, String> data) throws JSONException {
         boolean isHandled = false;
         Log.d(TAG, "Inspecting message.");
         Log.d(TAG, data.toString());
 
-        String type = data.get("type");
-        if (type != null && (type.equals("incoming_phone_call") || type.equals("incoming_video_call"))) {
+        String payloadString = data.get("payload");
+        if (payloadString == null) {
+            return isHandled;
+        }
+
+        JSONObject payload = new JSONObject(payloadString);
+
+        String type = payload.optString("type");
+        if (type.equals("incoming_phone_call") || type.equals("incoming_video_call")) {
             isHandled = true;
 
             Bundle extras = new Bundle();
-            for (Map.Entry<String, String> entry : data.entrySet()) {
-                extras.putString(entry.getKey(), entry.getValue());
-            }
+            extras.putString("from", payload.getString("from"));
+            extras.putString("payload", payloadString);
 
             tm.addNewIncomingCall(handle, extras);
             tm.showInCallScreen(false);
             openFacetalkApp();
         }
+
         return isHandled;
     }
 
