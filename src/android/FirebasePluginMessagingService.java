@@ -90,6 +90,10 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
     @Override
     public void onMessageReceived(RemoteMessage remoteMessage) {
         try{
+            // Initialize any custom FCM handlers as the standard method does not persist once the app is closed
+            CustomFCMReceiverPlugin customFCMReceiver = new CustomFCMReceiverPlugin();
+            customFCMReceiver.initialize(this.getApplicationContext());
+
             // [START_EXCLUDE]
             // There are two types of messages data messages and notification messages. Data messages are handled
             // here in onMessageReceived whether the app is in the foreground or background. Data messages are the type
