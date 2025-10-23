@@ -21,6 +21,8 @@ import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.CordovaWebView;
 import org.apache.cordova.firebase.FirebasePluginMessageReceiver;
+
+import com.dmarc.cordovacall.InComingCallReceiver;
 import com.dmarc.cordovacall.MyConnectionService;
 import com.google.firebase.messaging.RemoteMessage;
 
@@ -35,11 +37,7 @@ import org.json.JSONObject;
 public class CustomFCMReceiverPlugin {
     static final String TAG = "CustomFCMReceiverPlugin";
     private CustomFCMReceiver customFCMReceiver;
-    private TelecomManager tm;
-    private PhoneAccount phoneAccount;
-    private PhoneAccountHandle handle;
-    private String appName;
-    private String from;
+
     private Context applicationContext;
 
     public void initialize(Context initialApplicationContext) {
@@ -48,28 +46,9 @@ public class CustomFCMReceiverPlugin {
             Log.d(TAG, "initialApplicationContext: " + initialApplicationContext.toString());
             applicationContext = initialApplicationContext;
             customFCMReceiver = new CustomFCMReceiver();
-            appName = getApplicationName();
-            tm = (TelecomManager) applicationContext.getSystemService(Context.TELECOM_SERVICE);
-            handle = getExistingPhoneAccountHandle();
         } catch (Exception e) {
             handleException("Initializing plugin", e);
         }
-    }
-
-    private String getApplicationName() {
-        ApplicationInfo applicationInfo = applicationContext.getApplicationInfo();
-        int stringId = applicationInfo.labelRes;
-        return stringId == 0 ? applicationInfo.nonLocalizedLabel.toString() : applicationContext.getString(stringId);
-    }
-
-    private PhoneAccountHandle getExistingPhoneAccountHandle() {
-        for (PhoneAccountHandle accountHandle : tm.getCallCapablePhoneAccounts()) {
-            PhoneAccount phoneAccount = tm.getPhoneAccount(accountHandle);
-            if (phoneAccount != null && phoneAccount.getLabel().toString().equals(appName)) {
-                return accountHandle;
-            }
-        }
-        return null;
     }
 
     protected static void handleError(String errorMsg) {
@@ -80,22 +59,9 @@ public class CustomFCMReceiverPlugin {
         handleError(description + ": " + exception.toString());
     }
 
-    private Map<String, String> bundleToMap(Bundle extras) {
-        Map<String, String> map = new HashMap<String, String>();
-
-        Set<String> ks = extras.keySet();
-        Iterator<String> iterator = ks.iterator();
-        while (iterator.hasNext()) {
-            String key = iterator.next();
-            map.put(key, extras.getString(key));
-        }
-        return map;
-    }
-
     private boolean inspectAndHandleMessageData(Map<String, String> data) throws JSONException {
         boolean isHandled = false;
-        Log.d(TAG, "Inspecting message.");
-        Log.d(TAG, data.toString());
+        Log.d(TAG, "inspectAndHandleMessageData: " + data);
 
         String payloadString = data.get("payload");
         if (payloadString == null) {
@@ -108,27 +74,15 @@ public class CustomFCMReceiverPlugin {
         if (type.equals("incoming_phone_call") || type.equals("incoming_video_call")) {
             isHandled = true;
 
-            Bundle extras = new Bundle();
-            extras.putString("from", payload.getString("from"));
-            extras.putString("payload", payloadString);
-
-            tm.addNewIncomingCall(handle, extras);
-
-            openFacetalkApp();
+            Intent intent = new Intent("INCOMING_CALL_INVITE");
+            intent.setComponent(new ComponentName(this.applicationContext, MyConnectionService.class));
+            intent.putExtra("from", payload.optString("from", ""));
+            intent.putExtra("payload", payloadString);
+            Log.d(TAG, "launching startService() intent for MyConnectionService...");
+            this.applicationContext.startService(intent); // starts the service (if not running) this always results in a call to service.onStartCommand()
         }
 
         return isHandled;
-    }
-
-    private void openFacetalkApp() {
-        if (applicationContext != null) {
-            PackageManager packageManager = applicationContext.getPackageManager();
-            Intent intent = packageManager.getLaunchIntentForPackage(applicationContext.getPackageName());
-            // Intent.FLAG_ACTIVITY_REORDER_TO_FRONT Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT
-            // intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT | Intent.FLAG_FROM_BACKGROUND);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_FROM_BACKGROUND);
-            applicationContext.startActivity(intent);
-        }
     }
 
     private class CustomFCMReceiver extends FirebasePluginMessageReceiver {
@@ -151,13 +105,6 @@ public class CustomFCMReceiverPlugin {
         public boolean sendMessage(Bundle bundle) {
             Log.d("CustomFCMReceiver", "sendMessage");
             boolean isHandled = false;
-
-            // try {
-            //     Map<String, String> data = bundleToMap(bundle);
-            //     isHandled = inspectAndHandleMessageData(data);
-            // } catch (Exception e) {
-            //     handleException("sendMessage", e);
-            // }
 
             // We do not want to intercept sending a notification to Cordova
             return isHandled;
