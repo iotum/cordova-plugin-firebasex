@@ -113,7 +113,7 @@ public class CustomFCMReceiverPlugin {
             extras.putString("payload", payloadString);
 
             tm.addNewIncomingCall(handle, extras);
-            tm.showInCallScreen(false);
+
             openFacetalkApp();
         }
 
