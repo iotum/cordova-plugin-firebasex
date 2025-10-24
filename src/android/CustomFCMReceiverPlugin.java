@@ -1,36 +1,16 @@
 package org.apache.cordova.firebase;
 
 import android.os.Bundle;
-import android.os.Build;
-import android.text.TextUtils;
 import android.util.Log;
-import android.telecom.PhoneAccount;
-import android.telecom.PhoneAccountHandle;
-import android.telecom.TelecomManager;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.Context;
-import android.content.pm.ApplicationInfo;
-import android.content.pm.PackageManager;
-import androidx.core.content.ContextCompat;
-import androidx.core.app.ActivityCompat;
-import android.app.Activity;
-import android.Manifest;
 
-import org.apache.cordova.CordovaInterface;
-import org.apache.cordova.CordovaPlugin;
-import org.apache.cordova.CordovaWebView;
-import org.apache.cordova.firebase.FirebasePluginMessageReceiver;
-
-import com.dmarc.cordovacall.InComingCallReceiver;
 import com.dmarc.cordovacall.MyConnectionService;
 import com.google.firebase.messaging.RemoteMessage;
 
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
-import java.lang.reflect.Method;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -79,7 +59,13 @@ public class CustomFCMReceiverPlugin {
             intent.putExtra("from", payload.optString("from", ""));
             intent.putExtra("payload", payloadString);
             Log.d(TAG, "launching startService() intent for MyConnectionService...");
-            this.applicationContext.startService(intent); // starts the service (if not running) this always results in a call to service.onStartCommand()
+
+            // When you call startService() for an Android Service that is already running, a new instance of the service is not created.
+            // Instead, the onStartCommand() method of the existing service instance is called again.
+            // This allows you to deliver a new Intent to the running service,
+            // enabling it to process new requests or update its state without creating redundant instances.
+            // The ConnectionService needs to be started if for any reason its not currently running.
+            this.applicationContext.startService(intent);
         }
 
         return isHandled;
