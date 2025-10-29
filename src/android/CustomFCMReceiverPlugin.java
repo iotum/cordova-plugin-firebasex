@@ -21,7 +21,6 @@ import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.CordovaWebView;
 import org.apache.cordova.firebase.FirebasePluginMessageReceiver;
-import com.dmarc.cordovacall.MyConnectionService;
 import com.google.firebase.messaging.RemoteMessage;
 
 import java.util.HashMap;
