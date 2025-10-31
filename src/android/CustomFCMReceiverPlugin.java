@@ -57,7 +57,6 @@ public class CustomFCMReceiverPlugin {
 
             Intent intent = new Intent("INCOMING_CALL_INVITE");
             intent.setComponent(new ComponentName(this.applicationContext, MyConnectionService.class));
-            intent.putExtra("from", payload.optString("from", ""));
             intent.putExtra("payload", payloadString);
             Log.d(TAG, "launching startService() intent for MyConnectionService...");
 
