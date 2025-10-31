@@ -6,7 +6,8 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.content.Context;
 
-import com.dmarc.cordovacall.MyConnectionService;
+import com.dmarc.cordovacall.MyConnectionService; // TODO dereference by switching to implicit intent
+import org.apache.cordova.firebase.FirebasePluginMessageReceiver;
 import com.google.firebase.messaging.RemoteMessage;
 
 import java.util.Map;
