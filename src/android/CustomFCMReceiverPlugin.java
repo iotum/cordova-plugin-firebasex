@@ -1,44 +1,24 @@
 package org.apache.cordova.firebase;
 
 import android.os.Bundle;
-import android.os.Build;
-import android.text.TextUtils;
 import android.util.Log;
-import android.telecom.PhoneAccount;
-import android.telecom.PhoneAccountHandle;
-import android.telecom.TelecomManager;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.Context;
-import android.content.pm.ApplicationInfo;
-import android.content.pm.PackageManager;
-import androidx.core.content.ContextCompat;
-import androidx.core.app.ActivityCompat;
-import android.app.Activity;
-import android.Manifest;
 
-import org.apache.cordova.CordovaInterface;
-import org.apache.cordova.CordovaPlugin;
-import org.apache.cordova.CordovaWebView;
+import com.dmarc.cordovacall.MyConnectionService; // TODO dereference by switching to implicit intent
 import org.apache.cordova.firebase.FirebasePluginMessageReceiver;
 import com.google.firebase.messaging.RemoteMessage;
 
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
-import java.lang.reflect.Method;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
 public class CustomFCMReceiverPlugin {
     static final String TAG = "CustomFCMReceiverPlugin";
     private CustomFCMReceiver customFCMReceiver;
-    private TelecomManager tm;
-    private PhoneAccount phoneAccount;
-    private PhoneAccountHandle handle;
-    private String appName;
-    private String from;
+
     private Context applicationContext;
 
     public void initialize(Context initialApplicationContext) {
@@ -47,28 +27,9 @@ public class CustomFCMReceiverPlugin {
             Log.d(TAG, "initialApplicationContext: " + initialApplicationContext.toString());
             applicationContext = initialApplicationContext;
             customFCMReceiver = new CustomFCMReceiver();
-            appName = getApplicationName();
-            tm = (TelecomManager) applicationContext.getSystemService(Context.TELECOM_SERVICE);
-            handle = getExistingPhoneAccountHandle();
         } catch (Exception e) {
             handleException("Initializing plugin", e);
         }
-    }
-
-    private String getApplicationName() {
-        ApplicationInfo applicationInfo = applicationContext.getApplicationInfo();
-        int stringId = applicationInfo.labelRes;
-        return stringId == 0 ? applicationInfo.nonLocalizedLabel.toString() : applicationContext.getString(stringId);
-    }
-
-    private PhoneAccountHandle getExistingPhoneAccountHandle() {
-        for (PhoneAccountHandle accountHandle : tm.getCallCapablePhoneAccounts()) {
-            PhoneAccount phoneAccount = tm.getPhoneAccount(accountHandle);
-            if (phoneAccount != null && phoneAccount.getLabel().toString().equals(appName)) {
-                return accountHandle;
-            }
-        }
-        return null;
     }
 
     protected static void handleError(String errorMsg) {
@@ -79,22 +40,9 @@ public class CustomFCMReceiverPlugin {
         handleError(description + ": " + exception.toString());
     }
 
-    private Map<String, String> bundleToMap(Bundle extras) {
-        Map<String, String> map = new HashMap<String, String>();
-
-        Set<String> ks = extras.keySet();
-        Iterator<String> iterator = ks.iterator();
-        while (iterator.hasNext()) {
-            String key = iterator.next();
-            map.put(key, extras.getString(key));
-        }
-        return map;
-    }
-
     private boolean inspectAndHandleMessageData(Map<String, String> data) throws JSONException {
         boolean isHandled = false;
-        Log.d(TAG, "Inspecting message.");
-        Log.d(TAG, data.toString());
+        Log.d(TAG, "inspectAndHandleMessageData: " + data);
 
         String payloadString = data.get("payload");
         if (payloadString == null) {
@@ -107,27 +55,20 @@ public class CustomFCMReceiverPlugin {
         if (type.equals("incoming_phone_call") || type.equals("incoming_video_call")) {
             isHandled = true;
 
-            Bundle extras = new Bundle();
-            extras.putString("from", payload.getString("from"));
-            extras.putString("payload", payloadString);
+            Intent intent = new Intent("INCOMING_CALL_INVITE");
+            intent.setComponent(new ComponentName(this.applicationContext, MyConnectionService.class));
+            intent.putExtra("payload", payloadString);
+            Log.d(TAG, "launching startService() intent for MyConnectionService...");
 
-            tm.addNewIncomingCall(handle, extras);
-            tm.showInCallScreen(false);
-            openFacetalkApp();
+            // When you call startService() for an Android Service that is already running, a new instance of the service is not created.
+            // Instead, the onStartCommand() method of the existing service instance is called again.
+            // This allows you to deliver a new Intent to the running service,
+            // enabling it to process new requests or update its state without creating redundant instances.
+            // The ConnectionService needs to be started if for any reason its not currently running.
+            this.applicationContext.startService(intent);
         }
 
         return isHandled;
-    }
-
-    private void openFacetalkApp() {
-        if (applicationContext != null) {
-            PackageManager packageManager = applicationContext.getPackageManager();
-            Intent intent = packageManager.getLaunchIntentForPackage(applicationContext.getPackageName());
-            // Intent.FLAG_ACTIVITY_REORDER_TO_FRONT Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT
-            // intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT | Intent.FLAG_FROM_BACKGROUND);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_FROM_BACKGROUND);
-            applicationContext.startActivity(intent);
-        }
     }
 
     private class CustomFCMReceiver extends FirebasePluginMessageReceiver {
@@ -150,13 +91,6 @@ public class CustomFCMReceiverPlugin {
         public boolean sendMessage(Bundle bundle) {
             Log.d("CustomFCMReceiver", "sendMessage");
             boolean isHandled = false;
-
-            // try {
-            //     Map<String, String> data = bundleToMap(bundle);
-            //     isHandled = inspectAndHandleMessageData(data);
-            // } catch (Exception e) {
-            //     handleException("sendMessage", e);
-            // }
 
             // We do not want to intercept sending a notification to Cordova
             return isHandled;
