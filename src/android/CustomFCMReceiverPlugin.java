@@ -79,7 +79,7 @@ public class CustomFCMReceiverPlugin {
             boolean isHandled = false;
 
             int originalPriority = remoteMessage.getOriginalPriority();
-            int currentPriority = remoteMessage.getPriority();
+            int currentPriority = remoteMessage.getPriority(); // PRIORITY_HIGH = 1, PRIORITY_NORMAL = 2, PRIORITY_UNKNOWN = 0
 
             if (originalPriority != currentPriority) {
                 Log.e(TAG, "onMessageReceived: MESSAGE DEPRIORITIZED! originalPriority: " + originalPriority + " currentPriority: " + currentPriority);
