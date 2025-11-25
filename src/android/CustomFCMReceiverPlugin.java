@@ -58,15 +58,20 @@ public class CustomFCMReceiverPlugin {
             Intent intent = new Intent("INCOMING_CALL_INVITE");
             intent.setComponent(new ComponentName(this.applicationContext, MyConnectionService.class));
             intent.putExtra("payload", payloadString);
-            Log.d(TAG, "launching startForegroundService() intent for MyConnectionService...");
 
             // When you call startForegroundService() for an Android Service that is already running, a new instance of the service is not created.
             // Instead, the onStartCommand() method of the existing service instance is called again.
             // This allows you to deliver a new Intent to the running service,
             // enabling it to process new requests or update its state without creating redundant instances.
             // The ConnectionService needs to be started if for any reason its not currently running.
-            // Invoking startForegroundService() should be followed by a timely call to this.startForeground() (within MyConnectionService)
-            this.applicationContext.startForegroundService(intent);
+            if (payload.optBoolean("dismiss", false)) {
+                Log.d(TAG, "launching startService() intent for MyConnectionService...");
+                this.applicationContext.startService(intent);
+            } else {
+                Log.d(TAG, "launching startForegroundService() intent for MyConnectionService...");
+                // Invoking startForegroundService() should be followed by a timely call to this.startForeground() (within MyConnectionService)
+                this.applicationContext.startForegroundService(intent);
+            }
         }
 
         return isHandled;
@@ -77,6 +82,16 @@ public class CustomFCMReceiverPlugin {
         public boolean onMessageReceived(RemoteMessage remoteMessage) {
             Log.d("CustomFCMReceiver", "onMessageReceived");
             boolean isHandled = false;
+
+            int originalPriority = remoteMessage.getOriginalPriority();
+            int currentPriority = remoteMessage.getPriority(); // PRIORITY_HIGH = 1, PRIORITY_NORMAL = 2, PRIORITY_UNKNOWN = 0
+
+            if (originalPriority != currentPriority) {
+                Log.e(TAG, "onMessageReceived: MESSAGE DEPRIORITIZED! originalPriority: " + originalPriority + " currentPriority: " + currentPriority);
+                // Note: apps running in the background have restrictions imposed on them:
+                // See doc: https://developer.android.com/develop/background-work/services/fgs/restrictions-bg-start
+                // When the message is deprioritized like this, this may result in issues later related to notifications, foreground services, etc.
+            }
 
             try {
                 Map<String, String> data = remoteMessage.getData();
