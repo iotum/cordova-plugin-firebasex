@@ -59,19 +59,13 @@ public class CustomFCMReceiverPlugin {
             intent.setComponent(new ComponentName(this.applicationContext, MyConnectionService.class));
             intent.putExtra("payload", payloadString);
 
-            // When you call startForegroundService() for an Android Service that is already running, a new instance of the service is not created.
+            // When you call startService() for an Android Service that is already running, a new instance of the service is not created.
             // Instead, the onStartCommand() method of the existing service instance is called again.
             // This allows you to deliver a new Intent to the running service,
             // enabling it to process new requests or update its state without creating redundant instances.
             // The ConnectionService needs to be started if for any reason its not currently running.
-            if (payload.optBoolean("dismiss", false)) {
-                Log.d(TAG, "launching startService() intent for MyConnectionService...");
-                this.applicationContext.startService(intent);
-            } else {
-                Log.d(TAG, "launching startForegroundService() intent for MyConnectionService...");
-                // Invoking startForegroundService() should be followed by a timely call to this.startForeground() (within MyConnectionService)
-                this.applicationContext.startForegroundService(intent);
-            }
+            Log.d(TAG, "launching startService() intent for MyConnectionService...");
+            this.applicationContext.startService(intent);
         }
 
         return isHandled;
