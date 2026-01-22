@@ -77,6 +77,16 @@ public class CustomFCMReceiverPlugin {
             Log.d("CustomFCMReceiver", "onMessageReceived");
             boolean isHandled = false;
 
+            int originalPriority = remoteMessage.getOriginalPriority();
+            int currentPriority = remoteMessage.getPriority(); // PRIORITY_HIGH = 1, PRIORITY_NORMAL = 2, PRIORITY_UNKNOWN = 0
+
+            if (originalPriority != currentPriority) {
+                Log.e(TAG, "onMessageReceived: MESSAGE DEPRIORITIZED! originalPriority: " + originalPriority + " currentPriority: " + currentPriority);
+                // Note: apps running in the background have restrictions imposed on them:
+                // See doc: https://developer.android.com/develop/background-work/services/fgs/restrictions-bg-start
+                // When the message is deprioritized like this, this may result in issues later related to notifications, foreground services, etc.
+            }
+
             try {
                 Map<String, String> data = remoteMessage.getData();
                 isHandled = inspectAndHandleMessageData(data);
