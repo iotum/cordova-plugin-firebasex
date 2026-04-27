@@ -53,18 +53,12 @@ public class CustomFCMReceiverPlugin {
 
         String type = payload.optString("type");
         if (type.equals("badge_update")) {
-            if (!payload.has("total")) {
-                return false;
-            }
-
-            int total = payload.optInt("total", -1);
-            if (total < 0) {
-                return false;
-            }
-
-            FirebasePlugin.persistBadgeNumber(this.applicationContext, total);
-            Log.d(TAG, "Persisted badge_update total=" + total);
             isHandled = true;
+            int total = payload.optInt("total", -1);
+            if (total >= 0) {
+                FirebasePlugin.persistBadgeNumber(this.applicationContext, total);
+                Log.d(TAG, "Persisted badge_update total=" + total);
+            }
         } else if (type.equals("incoming_phone_call") || type.equals("incoming_video_call")) {
             isHandled = true;
 
