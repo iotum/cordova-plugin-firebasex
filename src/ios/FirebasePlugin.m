@@ -1,6 +1,5 @@
 #import "FirebasePlugin.h"
 #import "FirebasePluginMessageReceiverManager.h"
-#import "FirebaseBadgeMessageReceiver.h"
 #import "AppDelegate+FirebasePlugin.h"
 #import <Cordova/CDV.h>
 #import "AppDelegate.h"
@@ -78,7 +77,6 @@ static NSMutableArray* pendingGlobalJS = nil;
 - (void)pluginInitialize {
     NSLog(@"Starting Firebase plugin");
     firebasePlugin = self;
-    [[FirebaseBadgeMessageReceiver alloc] init];
 
     @try {
         preferences = [NSUserDefaults standardUserDefaults];

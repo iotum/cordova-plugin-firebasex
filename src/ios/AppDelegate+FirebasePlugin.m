@@ -1,6 +1,8 @@
 #import "AppDelegate+FirebasePlugin.h"
 #import "FirebasePlugin.h"
 #import "FirebaseWrapper.h"
+#import "FirebaseBadgeMessageReceiver.h"
+#import "FirebasePluginMessageReceiverManager.h"
 #import <objc/runtime.h>
 
 
@@ -142,6 +144,10 @@ static __weak id <UNUserNotificationCenterDelegate> _prevUserNotificationCenterD
 
         self.applicationInBackground = @(YES);
         
+        // Register badge receiver early so it handles silent pushes even during cold start,
+        // before the Cordova plugin (and FirebasePlugin.firebasePlugin) are initialized.
+        [[FirebaseBadgeMessageReceiver alloc] init];
+        
     }@catch (NSException *exception) {
         [FirebasePlugin.firebasePlugin handlePluginExceptionWithoutContext:exception];
     }
@@ -236,7 +242,12 @@ static __weak id <UNUserNotificationCenterDelegate> _prevUserNotificationCenterD
             [self processMessageForForegroundNotification:mutableUserInfo];
         }
         if([self.applicationInBackground isEqual:[NSNumber numberWithBool:YES]] || !isContentAvailable){
-            [FirebasePlugin.firebasePlugin sendNotification:mutableUserInfo];
+            if(FirebasePlugin.firebasePlugin != nil){
+                [FirebasePlugin.firebasePlugin sendNotification:mutableUserInfo];
+            }else{
+                // Plugin not yet initialized (cold start): route directly to registered receivers.
+                [FirebasePluginMessageReceiverManager sendNotification:mutableUserInfo];
+            }
         }
     }@catch (NSException *exception) {
         [FirebasePlugin.firebasePlugin handlePluginExceptionWithoutContext:exception];
