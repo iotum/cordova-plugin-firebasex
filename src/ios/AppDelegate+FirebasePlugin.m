@@ -200,7 +200,11 @@ static __weak id <UNUserNotificationCenterDelegate> _prevUserNotificationCenterD
     fetchCompletionHandler:(void (^)(UIBackgroundFetchResult))completionHandler {
 
     // Notify callkit plugin with any received notifications
-    [[NSNotificationCenter defaultCenter] postNotificationName:@"CallkitHandleRemotePushNotification" object:userInfo];
+    // CallKit APIs must be invoked on the main queue; ensure the observer runs there
+    // regardless of which thread iOS uses to deliver this callback.
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [[NSNotificationCenter defaultCenter] postNotificationName:@"CallkitHandleRemotePushNotification" object:userInfo];
+    });
 
     if (!self.isFCMEnabled) {
         return;
