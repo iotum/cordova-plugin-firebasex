@@ -52,7 +52,14 @@ public class CustomFCMReceiverPlugin {
         JSONObject payload = new JSONObject(payloadString);
 
         String type = payload.optString("type");
-        if (type.equals("incoming_phone_call") || type.equals("incoming_video_call")) {
+        if (type.equals("badge_update")) {
+            isHandled = true;
+            int total = payload.optInt("total", -1);
+            if (total >= 0) {
+                FirebasePlugin.persistBadgeNumber(this.applicationContext, total);
+                Log.d(TAG, "Persisted badge_update total=" + total);
+            }
+        } else if (type.equals("incoming_phone_call") || type.equals("incoming_video_call")) {
             isHandled = true;
 
             Intent intent = new Intent("INCOMING_CALL_INVITE");

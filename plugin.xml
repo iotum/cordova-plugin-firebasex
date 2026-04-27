@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<plugin id="cordova-plugin-firebasex" version="1.0.2"
+<plugin id="cordova-plugin-firebasex" version="1.0.3"
 	xmlns="http://apache.org/cordova/ns/plugins/1.0"
 	xmlns:android="http://schemas.android.com/apk/res/android"
 	xmlns:tools="http://schemas.android.com/tools"
@@ -25,6 +25,10 @@
 	<preference name="GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_STORAGE" default="true" />
 	<preference name="GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_USER_DATA" default="true" />
 	<preference name="GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_PERSONALIZATION_SIGNALS" default="true" />
+
+	<js-module name="IotumBadgeCompatibility" src="www/iotumBadge.js">
+		<clobbers target="cordova.plugins.iotumBadge" />
+	</js-module>
 
 	<platform name="android">
 		<preference name="ANDROID_ICON_ACCENT" default="#FF00FFFF" />
@@ -162,6 +166,8 @@
 		<source-file src="src/ios/FirebasePluginMessageReceiver.m" />
 		<header-file src="src/ios/FirebasePluginMessageReceiverManager.h" />
 		<source-file src="src/ios/FirebasePluginMessageReceiverManager.m" />
+		<header-file src="src/ios/FirebaseBadgeMessageReceiver.h" />
+		<source-file src="src/ios/FirebaseBadgeMessageReceiver.m" />
 
 		<framework src="AuthenticationServices.framework" />
 
