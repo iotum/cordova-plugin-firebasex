@@ -14,5 +14,5 @@ exports.clear = function (callback, errorCallback) {
 };
 
 exports.get = function (callback, errorCallback) {
-    exec(callback, errorCallback || null, 'FirebasePlugin', 'getBadgeNumber', []);
+    exec(callback || null, errorCallback || null, 'FirebasePlugin', 'getBadgeNumber', []);
 };

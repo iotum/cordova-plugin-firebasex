@@ -17,9 +17,6 @@
 @import AuthenticationServices;
 
 @implementation FirebasePlugin
-{
-    FirebaseBadgeMessageReceiver* _badgeMessageReceiver;
-}
 
 @synthesize openSettingsCallbackId;
 @synthesize notificationCallbackId;
@@ -81,7 +78,7 @@ static NSMutableArray* pendingGlobalJS = nil;
 - (void)pluginInitialize {
     NSLog(@"Starting Firebase plugin");
     firebasePlugin = self;
-    _badgeMessageReceiver = [[FirebaseBadgeMessageReceiver alloc] init];
+    [[FirebaseBadgeMessageReceiver alloc] init];
 
     @try {
         preferences = [NSUserDefaults standardUserDefaults];
