@@ -1,5 +1,6 @@
 #import "FirebasePlugin.h"
 #import "FirebasePluginMessageReceiverManager.h"
+#import "FirebaseBadgeMessageReceiver.h"
 #import "AppDelegate+FirebasePlugin.h"
 #import <Cordova/CDV.h>
 #import "AppDelegate.h"
@@ -14,49 +15,6 @@
 @import UserNotifications;
 @import CommonCrypto;
 @import AuthenticationServices;
-
-@interface FirebaseBadgeMessageReceiver : FirebasePluginMessageReceiver
-@end
-
-@implementation FirebaseBadgeMessageReceiver
-
-- (bool)sendNotification:(NSDictionary *)userInfo {
-    NSString *payloadString = userInfo[@"payload"];
-    if (!payloadString || ![payloadString isKindOfClass:[NSString class]]) {
-        return false;
-    }
-
-    NSData *jsonData = [payloadString dataUsingEncoding:NSUTF8StringEncoding];
-    if (jsonData == nil) {
-        return false;
-    }
-
-    NSError *error = nil;
-    id parsed = [NSJSONSerialization JSONObjectWithData:jsonData options:0 error:&error];
-    if (error || !parsed || ![parsed isKindOfClass:[NSDictionary class]]) {
-        return false;
-    }
-
-    NSDictionary *payload = (NSDictionary *)parsed;
-    NSString *type = payload[@"type"];
-    if (![@"badge_update" isEqualToString:type]) {
-        return false;
-    }
-
-    id totalValue = payload[@"total"];
-    if (!totalValue || ![totalValue respondsToSelector:@selector(intValue)]) {
-        return false;
-    }
-
-    int total = [totalValue intValue];
-    dispatch_async(dispatch_get_main_queue(), ^{
-        [[UIApplication sharedApplication] setApplicationIconBadgeNumber:MAX(0, total)];
-    });
-
-    return true;
-}
-
-@end
 
 @implementation FirebasePlugin
 {
