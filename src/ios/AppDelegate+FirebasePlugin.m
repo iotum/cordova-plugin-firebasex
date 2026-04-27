@@ -207,6 +207,7 @@ static __weak id <UNUserNotificationCenterDelegate> _prevUserNotificationCenterD
     });
 
     if (!self.isFCMEnabled) {
+        completionHandler(UIBackgroundFetchResultNoData);
         return;
     }
     
@@ -244,6 +245,7 @@ static __weak id <UNUserNotificationCenterDelegate> _prevUserNotificationCenterD
         }
     }@catch (NSException *exception) {
         [FirebasePlugin.firebasePlugin handlePluginExceptionWithoutContext:exception];
+        completionHandler(UIBackgroundFetchResultFailed);
     }
 }
 
