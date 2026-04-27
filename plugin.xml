@@ -26,6 +26,10 @@
 	<preference name="GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_USER_DATA" default="true" />
 	<preference name="GOOGLE_ANALYTICS_DEFAULT_ALLOW_AD_PERSONALIZATION_SIGNALS" default="true" />
 
+	<js-module name="IotumBadgeCompatibility" src="www/iotumBadge.js">
+		<clobbers target="cordova.plugins.iotumBadge" />
+	</js-module>
+
 	<platform name="android">
 		<preference name="ANDROID_ICON_ACCENT" default="#FF00FFFF" />
 		<preference name="ANDROID_FIREBASE_PERFORMANCE_MONITORING" default="false" />

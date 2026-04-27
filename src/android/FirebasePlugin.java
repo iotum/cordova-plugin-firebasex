@@ -154,6 +154,8 @@ public class FirebasePlugin extends CordovaPlugin {
     protected static final String TAG = "FirebasePlugin";
     protected static final String JS_GLOBAL_NAMESPACE = "FirebasePlugin.";
     protected static final String KEY = "badge";
+    protected static final String BADGE_PREFS_NAME = "iotum_badge";
+    protected static final String BADGE_KEY = "badge_count";
     protected static final int GOOGLE_SIGN_IN = 0x1;
     protected static final String SETTINGS_NAME = "settings";
     private static final String ANALYTICS_COLLECTION_ENABLED = "firebase_analytics_collection_enabled";
@@ -543,10 +545,14 @@ public class FirebasePlugin extends CordovaPlugin {
                     break;
                 case "grantCriticalPermission":
                 case "hasCriticalPermission":
-                case "setBadgeNumber":
-                case "getBadgeNumber":
                     // Stubs for other platform methods
                     callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, true));
+                    break;
+                case "setBadgeNumber":
+                    this.setBadgeNumber(args, callbackContext);
+                    break;
+                case "getBadgeNumber":
+                    this.getBadgeNumber(callbackContext);
                     break;
                 case "deleteInstallationId":
                     this.deleteInstallationId(args, callbackContext);
@@ -802,6 +808,56 @@ public class FirebasePlugin extends CordovaPlugin {
                 }
             }
         });
+    }
+
+    private void setBadgeNumber(final JSONArray args, final CallbackContext callbackContext) {
+        cordova.getThreadPool().execute(new Runnable() {
+            public void run() {
+                try {
+                    int number = Math.max(0, args.optInt(0, 0));
+                    persistBadgeNumber(applicationContext, number);
+                    callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, number));
+                } catch (Exception e) {
+                    handleExceptionWithContext(e, callbackContext);
+                }
+            }
+        });
+    }
+
+    private void getBadgeNumber(final CallbackContext callbackContext) {
+        cordova.getThreadPool().execute(new Runnable() {
+            public void run() {
+                try {
+                    int number = getPersistedBadgeNumber(applicationContext);
+                    callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK, number));
+                } catch (Exception e) {
+                    handleExceptionWithContext(e, callbackContext);
+                }
+            }
+        });
+    }
+
+    static void persistBadgeNumber(Context context, int number) {
+        if (context == null) {
+            Log.w(TAG, "Cannot persist badge number: context is null");
+            return;
+        }
+
+        int normalized = Math.max(0, number);
+        SharedPreferences settings = context.getSharedPreferences(BADGE_PREFS_NAME, MODE_PRIVATE);
+        SharedPreferences.Editor editor = settings.edit();
+        editor.putInt(BADGE_KEY, normalized);
+        editor.apply();
+    }
+
+    static int getPersistedBadgeNumber(Context context) {
+        if (context == null) {
+            Log.w(TAG, "Cannot read badge number: context is null");
+            return 0;
+        }
+
+        SharedPreferences settings = context.getSharedPreferences(BADGE_PREFS_NAME, MODE_PRIVATE);
+        return settings.getInt(BADGE_KEY, 0);
     }
 
     private void hasPermission(final CallbackContext callbackContext) {
