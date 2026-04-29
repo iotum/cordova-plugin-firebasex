@@ -34,8 +34,12 @@ public class CustomFCMReceiverPlugin {
 
     public void initialize(Context initialApplicationContext) {
         synchronized (CustomFCMReceiverPlugin.class) {
-            // Always update the context in case it changed
-            applicationContext = initialApplicationContext;
+            if (initialApplicationContext == null) {
+                Log.w(TAG, "initialize called with null context, ignoring");
+                return;
+            }
+            // Normalize to application context to avoid Activity leaks
+            applicationContext = initialApplicationContext.getApplicationContext();
 
             if (initialized) {
                 Log.d(TAG, "Already initialized, skipping duplicate registration");
@@ -43,7 +47,7 @@ public class CustomFCMReceiverPlugin {
             }
             Log.d(TAG, "initialize");
             try {
-                Log.d(TAG, "initialApplicationContext: " + initialApplicationContext.toString());
+                Log.d(TAG, "applicationContext: " + applicationContext.toString());
                 customFCMReceiver = new CustomFCMReceiver();
                 initialized = true;
             } catch (Exception e) {
@@ -104,11 +108,19 @@ public class CustomFCMReceiverPlugin {
     private static final int BADGE_NOTIFICATION_ID = 9999;
 
     /**
-     * Posts (or cancels) a silent, invisible notification whose sole purpose is to
+     * Posts (or cancels) a low-importance notification whose sole purpose is to
      * carry the badge count for launchers (like Pixel) that derive badge numbers
      * from active notifications rather than ShortcutBadger.
+     *
+     * Note: IMPORTANCE_MIN suppresses sound/vibration/heads-up but the notification
+     * may still appear as a minimal entry in the notification shade.
      */
     private static void updateBadgeNotification(int count) {
+        if (applicationContext == null) {
+            Log.w(TAG, "Cannot update badge notification: context is null");
+            return;
+        }
+
         NotificationManager nm = (NotificationManager) applicationContext.getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm == null) return;
 
@@ -135,9 +147,14 @@ public class CustomFCMReceiverPlugin {
 
         Notification notification = new NotificationCompat.Builder(applicationContext, BADGE_CHANNEL_ID)
                 .setSmallIcon(applicationContext.getApplicationInfo().icon)
+                .setContentTitle("")
+                .setContentText("")
                 .setNumber(count)
                 .setPriority(NotificationCompat.PRIORITY_MIN)
                 .setVisibility(NotificationCompat.VISIBILITY_SECRET)
+                .setSilent(true)
+                .setShowWhen(false)
+                .setOnlyAlertOnce(true)
                 .setOngoing(false)
                 .build();
 
