@@ -33,20 +33,22 @@ public class CustomFCMReceiverPlugin {
     private static volatile boolean initialized = false;
 
     public void initialize(Context initialApplicationContext) {
-        // Always update the context in case it changed
-        applicationContext = initialApplicationContext;
+        synchronized (CustomFCMReceiverPlugin.class) {
+            // Always update the context in case it changed
+            applicationContext = initialApplicationContext;
 
-        if (initialized) {
-            Log.d(TAG, "Already initialized, skipping duplicate registration");
-            return;
-        }
-        Log.d(TAG, "initialize");
-        try {
-            Log.d(TAG, "initialApplicationContext: " + initialApplicationContext.toString());
-            customFCMReceiver = new CustomFCMReceiver();
-            initialized = true;
-        } catch (Exception e) {
-            handleException("Initializing plugin", e);
+            if (initialized) {
+                Log.d(TAG, "Already initialized, skipping duplicate registration");
+                return;
+            }
+            Log.d(TAG, "initialize");
+            try {
+                Log.d(TAG, "initialApplicationContext: " + initialApplicationContext.toString());
+                customFCMReceiver = new CustomFCMReceiver();
+                initialized = true;
+            } catch (Exception e) {
+                handleException("Initializing plugin", e);
+            }
         }
     }
 
