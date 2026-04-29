@@ -117,6 +117,7 @@
 		<framework src="com.google.firebase:firebase-installations:$ANDROID_FIREBASE_INSTALLATIONS_VERSION" />
 		<framework src="com.google.code.gson:gson:$ANDROID_GSON_VERSION" />
 		<framework src="io.grpc:grpc-okhttp:$ANDROID_GRPC_OKHTTP" />
+		<framework src="me.leolin:ShortcutBadger:1.1.22" />
 	</platform>
 
 	<platform name="ios">
