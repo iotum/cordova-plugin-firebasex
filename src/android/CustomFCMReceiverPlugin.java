@@ -11,6 +11,8 @@ import org.apache.cordova.firebase.FirebasePluginMessageReceiver;
 import com.google.firebase.messaging.RemoteMessage;
 
 
+import me.leolin.shortcutbadger.ShortcutBadger;
+
 import java.util.Map;
 
 import org.json.JSONException;
@@ -58,6 +60,7 @@ public class CustomFCMReceiverPlugin {
             int total = payload.optInt("total", -1);
             if (total >= 0) {
                 FirebasePlugin.persistBadgeNumber(this.applicationContext, total);
+                ShortcutBadger.applyCount(this.applicationContext, total);
                 Log.d(TAG, "Persisted badge_update total=" + total);
             }
         } else if (type.equals("incoming_phone_call") || type.equals("incoming_video_call")) {

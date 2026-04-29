@@ -28,6 +28,7 @@ import android.graphics.Paint;
 import android.graphics.Canvas;
 
 import com.google.firebase.messaging.FirebaseMessagingService;
+import me.leolin.shortcutbadger.ShortcutBadger;
 import com.google.firebase.messaging.RemoteMessage;
 
 
@@ -435,6 +436,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
             if (badgeNumber > 0) {
                 notificationBuilder.setSubText(String.valueOf(badgeNumber));
             }
+            ShortcutBadger.applyCount(getApplicationContext(), badgeNumber);
 
             // Build notification
             Notification notification = notificationBuilder.build();
