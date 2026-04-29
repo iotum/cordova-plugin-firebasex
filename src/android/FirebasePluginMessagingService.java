@@ -431,7 +431,7 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
             // Badge count - only set on non-Samsung devices.
             // Samsung launchers derive badges from ShortcutBadger; setting setNumber() here
             // would double-count alongside ShortcutBadger.applyCount() in badge_update handler.
-            if (!"samsung".equalsIgnoreCase(android.os.Build.MANUFACTURER)) {
+            if (!CustomFCMReceiverPlugin.isSamsungDevice()) {
                 int badgeNumber = FirebasePlugin.getPersistedBadgeNumber(getApplicationContext());
                 Log.d(TAG, "Badge number: " + badgeNumber);
                 notificationBuilder.setNumber(badgeNumber);

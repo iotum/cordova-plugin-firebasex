@@ -128,9 +128,26 @@ public class CustomFCMReceiverPlugin {
     /**
      * Returns true if the device is manufactured by Samsung, which uses
      * ShortcutBadger for badge counts rather than notification-derived badges.
+     * Shared utility used by both CustomFCMReceiverPlugin and FirebasePluginMessagingService.
      */
-    private static boolean isSamsungDevice() {
+    static boolean isSamsungDevice() {
         return "samsung".equalsIgnoreCase(Build.MANUFACTURER);
+    }
+
+    /**
+     * Resolves a non-zero small icon resource ID for notifications.
+     * Tries the custom "notification_icon" drawable first, then falls back
+     * to applicationInfo.icon, and finally to the Android default app icon.
+     */
+    private static int getSmallIconResId(Context ctx) {
+        int iconResId = ctx.getResources().getIdentifier(
+                "notification_icon", "drawable", ctx.getPackageName());
+        if (iconResId != 0) return iconResId;
+
+        iconResId = ctx.getApplicationInfo().icon;
+        if (iconResId != 0) return iconResId;
+
+        return android.R.drawable.sym_def_app_icon;
     }
 
     /**
@@ -196,7 +213,7 @@ public class CustomFCMReceiverPlugin {
         }
 
         Notification notification = new NotificationCompat.Builder(ctx, BADGE_CHANNEL_ID)
-                .setSmallIcon(ctx.getApplicationInfo().icon)
+                .setSmallIcon(getSmallIconResId(ctx))
                 .setContentTitle("")
                 .setContentText("")
                 .setNumber(count)
@@ -205,7 +222,7 @@ public class CustomFCMReceiverPlugin {
                 .setSilent(true)
                 .setShowWhen(false)
                 .setOnlyAlertOnce(true)
-                .setOngoing(false)
+                .setOngoing(true)
                 .build();
 
         try {
