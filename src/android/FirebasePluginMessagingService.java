@@ -428,13 +428,14 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
             Log.d(TAG, "Priority: " + iPriority);
             notificationBuilder.setPriority(iPriority);
 
-            // Badge count
-            int badgeNumber = FirebasePlugin.getPersistedBadgeNumber(getApplicationContext());
-            Log.d(TAG, "Badge number: " + badgeNumber);
-            notificationBuilder.setNumber(badgeNumber);
-            // Note: ShortcutBadger.applyCount() is NOT called here because on Samsung devices
-            // it causes double-counting (ShortcutBadger value + notification count).
-            // Badge count is managed by the badge_update message handler in CustomFCMReceiverPlugin.
+            // Badge count - only set on non-Samsung devices.
+            // Samsung launchers derive badges from ShortcutBadger; setting setNumber() here
+            // would double-count alongside ShortcutBadger.applyCount() in badge_update handler.
+            if (!"samsung".equalsIgnoreCase(android.os.Build.MANUFACTURER)) {
+                int badgeNumber = FirebasePlugin.getPersistedBadgeNumber(getApplicationContext());
+                Log.d(TAG, "Badge number: " + badgeNumber);
+                notificationBuilder.setNumber(badgeNumber);
+            }
 
             // Build notification
             Notification notification = notificationBuilder.build();

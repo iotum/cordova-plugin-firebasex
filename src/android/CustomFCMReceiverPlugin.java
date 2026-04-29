@@ -151,20 +151,22 @@ public class CustomFCMReceiverPlugin {
         NotificationManager nm = (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm == null) return;
 
-        // On Android 13+ (targetSdk 33), posting notifications without POST_NOTIFICATIONS
-        // permission throws SecurityException. Check before proceeding.
-        NotificationManagerCompat nmc = NotificationManagerCompat.from(ctx);
-        if (!nmc.areNotificationsEnabled()) {
-            Log.d(TAG, "Notifications disabled, skipping badge notification");
-            return;
-        }
-
+        // Cancel path runs regardless of notification permission state to avoid
+        // leaving a stale badge notification after permissions are revoked.
         if (count <= 0) {
             try {
                 nm.cancel(BADGE_NOTIFICATION_ID);
             } catch (SecurityException e) {
                 Log.w(TAG, "SecurityException cancelling badge notification: " + e.getMessage());
             }
+            return;
+        }
+
+        // On Android 13+ (targetSdk 33), posting notifications without POST_NOTIFICATIONS
+        // permission throws SecurityException. Only gate the notify() call.
+        NotificationManagerCompat nmc = NotificationManagerCompat.from(ctx);
+        if (!nmc.areNotificationsEnabled()) {
+            Log.d(TAG, "Notifications disabled, skipping badge notification");
             return;
         }
 
