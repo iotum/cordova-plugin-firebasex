@@ -10,7 +10,6 @@ import com.dmarc.cordovacall.MyConnectionService; // TODO dereference by switchi
 import org.apache.cordova.firebase.FirebasePluginMessageReceiver;
 import com.google.firebase.messaging.RemoteMessage;
 
-import me.leolin.shortcutbadger.ShortcutBadger;
 
 import java.util.Map;
 
@@ -60,8 +59,6 @@ public class CustomFCMReceiverPlugin {
             if (total >= 0) {
                 FirebasePlugin.persistBadgeNumber(this.applicationContext, total);
                 Log.d(TAG, "Persisted badge_update total=" + total);
-                ShortcutBadger.applyCount(this.applicationContext, total);
-                Log.d(TAG, "Applied badge count via ShortcutBadger: " + total);
             }
         } else if (type.equals("incoming_phone_call") || type.equals("incoming_video_call")) {
             isHandled = true;
