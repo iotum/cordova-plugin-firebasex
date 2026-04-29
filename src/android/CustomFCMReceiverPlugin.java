@@ -162,14 +162,6 @@ public class CustomFCMReceiverPlugin {
             return;
         }
 
-        // On Android 13+ (targetSdk 33), posting notifications without POST_NOTIFICATIONS
-        // permission throws SecurityException. Only gate the notify() call.
-        NotificationManagerCompat nmc = NotificationManagerCompat.from(ctx);
-        if (!nmc.areNotificationsEnabled()) {
-            Log.d(TAG, "Notifications disabled, skipping badge notification");
-            return;
-        }
-
         // Create a low-importance channel (no sound, no vibration, no heads-up)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = nm.getNotificationChannel(BADGE_CHANNEL_ID);
@@ -192,6 +184,15 @@ public class CustomFCMReceiverPlugin {
                 channel.setSound(null, null);
                 nm.createNotificationChannel(channel);
             }
+        }
+
+        // On Android 13+ (targetSdk 33), posting notifications without POST_NOTIFICATIONS
+        // permission throws SecurityException. Only gate the notify() call so channel
+        // creation above still runs regardless of permission state.
+        NotificationManagerCompat nmc = NotificationManagerCompat.from(ctx);
+        if (!nmc.areNotificationsEnabled()) {
+            Log.d(TAG, "Notifications disabled, skipping badge notification post");
+            return;
         }
 
         Notification notification = new NotificationCompat.Builder(ctx, BADGE_CHANNEL_ID)
