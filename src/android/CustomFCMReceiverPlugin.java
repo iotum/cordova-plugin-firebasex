@@ -11,6 +11,7 @@ import android.content.Intent;
 import android.content.Context;
 
 import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
 
 import com.dmarc.cordovacall.MyConnectionService; // TODO dereference by switching to implicit intent
 import org.apache.cordova.firebase.FirebasePluginMessageReceiver;
@@ -124,8 +125,20 @@ public class CustomFCMReceiverPlugin {
         NotificationManager nm = (NotificationManager) applicationContext.getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm == null) return;
 
+        // On Android 13+ (targetSdk 33), posting notifications without POST_NOTIFICATIONS
+        // permission throws SecurityException. Check before proceeding.
+        NotificationManagerCompat nmc = NotificationManagerCompat.from(applicationContext);
+        if (!nmc.areNotificationsEnabled()) {
+            Log.d(TAG, "Notifications disabled, skipping badge notification");
+            return;
+        }
+
         if (count <= 0) {
-            nm.cancel(BADGE_NOTIFICATION_ID);
+            try {
+                nm.cancel(BADGE_NOTIFICATION_ID);
+            } catch (SecurityException e) {
+                Log.w(TAG, "SecurityException cancelling badge notification: " + e.getMessage());
+            }
             return;
         }
 
@@ -133,9 +146,17 @@ public class CustomFCMReceiverPlugin {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = nm.getNotificationChannel(BADGE_CHANNEL_ID);
             if (channel == null) {
+                // Try to load channel name from app resources; fall back to default
+                String channelName = "Badge Updates";
+                int nameResId = applicationContext.getResources().getIdentifier(
+                        "badge_channel_name", "string", applicationContext.getPackageName());
+                if (nameResId != 0) {
+                    channelName = applicationContext.getString(nameResId);
+                }
+
                 channel = new NotificationChannel(
                         BADGE_CHANNEL_ID,
-                        "Badge Updates",
+                        channelName,
                         NotificationManager.IMPORTANCE_MIN);
                 channel.setShowBadge(true);
                 channel.enableLights(false);
@@ -158,7 +179,11 @@ public class CustomFCMReceiverPlugin {
                 .setOngoing(false)
                 .build();
 
-        nm.notify(BADGE_NOTIFICATION_ID, notification);
+        try {
+            nm.notify(BADGE_NOTIFICATION_ID, notification);
+        } catch (SecurityException e) {
+            Log.w(TAG, "SecurityException posting badge notification: " + e.getMessage());
+        }
     }
 
     private static class CustomFCMReceiver extends FirebasePluginMessageReceiver {
