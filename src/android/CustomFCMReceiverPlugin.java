@@ -27,9 +27,9 @@ import org.json.JSONObject;
 
 public class CustomFCMReceiverPlugin {
     static final String TAG = "CustomFCMReceiverPlugin";
-    private static CustomFCMReceiver customFCMReceiver;
+    private static volatile CustomFCMReceiver customFCMReceiver;
 
-    private static Context applicationContext;
+    private static volatile Context applicationContext;
 
     private static volatile boolean initialized = false;
 
@@ -81,16 +81,33 @@ public class CustomFCMReceiverPlugin {
             isHandled = true;
             int total = payload.optInt("total", -1);
             if (total >= 0) {
-                FirebasePlugin.persistBadgeNumber(applicationContext, total);
-                ShortcutBadger.applyCount(applicationContext, total);
-                updateBadgeNotification(total);
+                Context ctx = applicationContext;
+                if (ctx == null) {
+                    Log.w(TAG, "Cannot handle badge_update: context is null");
+                    return isHandled;
+                }
+                FirebasePlugin.persistBadgeNumber(ctx, total);
+                // Samsung launchers use ShortcutBadger; other launchers (e.g., Pixel)
+                // derive badges from active notifications. Use only one mechanism per
+                // device to avoid double-counting.
+                if (isSamsungDevice()) {
+                    ShortcutBadger.applyCount(ctx, total);
+                } else {
+                    updateBadgeNotification(total);
+                }
                 Log.d(TAG, "Persisted badge_update total=" + total);
             }
         } else if (type.equals("incoming_phone_call") || type.equals("incoming_video_call")) {
             isHandled = true;
 
+            Context ctx = applicationContext;
+            if (ctx == null) {
+                Log.w(TAG, "Cannot handle call intent: context is null");
+                return isHandled;
+            }
+
             Intent intent = new Intent("INCOMING_CALL_INVITE");
-            intent.setComponent(new ComponentName(applicationContext, MyConnectionService.class));
+            intent.setComponent(new ComponentName(ctx, MyConnectionService.class));
             intent.putExtra("payload", payloadString);
 
             // When you call startService() for an Android Service that is already running, a new instance of the service is not created.
@@ -99,7 +116,7 @@ public class CustomFCMReceiverPlugin {
             // enabling it to process new requests or update its state without creating redundant instances.
             // The ConnectionService needs to be started if for any reason its not currently running.
             Log.d(TAG, "launching startService() intent for MyConnectionService...");
-            applicationContext.startService(intent);
+            ctx.startService(intent);
         }
 
         return isHandled;
@@ -107,6 +124,14 @@ public class CustomFCMReceiverPlugin {
 
     private static final String BADGE_CHANNEL_ID = "iotum_badge_channel";
     private static final int BADGE_NOTIFICATION_ID = 9999;
+
+    /**
+     * Returns true if the device is manufactured by Samsung, which uses
+     * ShortcutBadger for badge counts rather than notification-derived badges.
+     */
+    private static boolean isSamsungDevice() {
+        return "samsung".equalsIgnoreCase(Build.MANUFACTURER);
+    }
 
     /**
      * Posts (or cancels) a low-importance notification whose sole purpose is to
@@ -117,17 +142,18 @@ public class CustomFCMReceiverPlugin {
      * may still appear as a minimal entry in the notification shade.
      */
     private static void updateBadgeNotification(int count) {
-        if (applicationContext == null) {
+        Context ctx = applicationContext;
+        if (ctx == null) {
             Log.w(TAG, "Cannot update badge notification: context is null");
             return;
         }
 
-        NotificationManager nm = (NotificationManager) applicationContext.getSystemService(Context.NOTIFICATION_SERVICE);
+        NotificationManager nm = (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm == null) return;
 
         // On Android 13+ (targetSdk 33), posting notifications without POST_NOTIFICATIONS
         // permission throws SecurityException. Check before proceeding.
-        NotificationManagerCompat nmc = NotificationManagerCompat.from(applicationContext);
+        NotificationManagerCompat nmc = NotificationManagerCompat.from(ctx);
         if (!nmc.areNotificationsEnabled()) {
             Log.d(TAG, "Notifications disabled, skipping badge notification");
             return;
@@ -148,10 +174,10 @@ public class CustomFCMReceiverPlugin {
             if (channel == null) {
                 // Try to load channel name from app resources; fall back to default
                 String channelName = "Badge Updates";
-                int nameResId = applicationContext.getResources().getIdentifier(
-                        "badge_channel_name", "string", applicationContext.getPackageName());
+                int nameResId = ctx.getResources().getIdentifier(
+                        "badge_channel_name", "string", ctx.getPackageName());
                 if (nameResId != 0) {
-                    channelName = applicationContext.getString(nameResId);
+                    channelName = ctx.getString(nameResId);
                 }
 
                 channel = new NotificationChannel(
@@ -166,8 +192,8 @@ public class CustomFCMReceiverPlugin {
             }
         }
 
-        Notification notification = new NotificationCompat.Builder(applicationContext, BADGE_CHANNEL_ID)
-                .setSmallIcon(applicationContext.getApplicationInfo().icon)
+        Notification notification = new NotificationCompat.Builder(ctx, BADGE_CHANNEL_ID)
+                .setSmallIcon(ctx.getApplicationInfo().icon)
                 .setContentTitle("")
                 .setContentText("")
                 .setNumber(count)
