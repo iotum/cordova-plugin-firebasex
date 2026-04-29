@@ -427,6 +427,11 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
             Log.d(TAG, "Priority: " + iPriority);
             notificationBuilder.setPriority(iPriority);
 
+            // Badge count
+            int badgeNumber = FirebasePlugin.getPersistedBadgeNumber(getApplicationContext());
+            Log.d(TAG, "Badge number: " + badgeNumber);
+            notificationBuilder.setNumber(badgeNumber);
+
             // Build notification
             Notification notification = notificationBuilder.build();
 
