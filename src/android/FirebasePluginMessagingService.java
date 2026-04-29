@@ -28,7 +28,6 @@ import android.graphics.Paint;
 import android.graphics.Canvas;
 
 import com.google.firebase.messaging.FirebaseMessagingService;
-import me.leolin.shortcutbadger.ShortcutBadger;
 import com.google.firebase.messaging.RemoteMessage;
 
 
@@ -433,7 +432,9 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
             int badgeNumber = FirebasePlugin.getPersistedBadgeNumber(getApplicationContext());
             Log.d(TAG, "Badge number: " + badgeNumber);
             notificationBuilder.setNumber(badgeNumber);
-            ShortcutBadger.applyCount(getApplicationContext(), badgeNumber);
+            // Note: ShortcutBadger.applyCount() is NOT called here because on Samsung devices
+            // it causes double-counting (ShortcutBadger value + notification count).
+            // Badge count is managed by the badge_update message handler in CustomFCMReceiverPlugin.
 
             // Build notification
             Notification notification = notificationBuilder.build();

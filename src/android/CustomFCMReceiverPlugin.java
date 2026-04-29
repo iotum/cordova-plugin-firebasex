@@ -1,10 +1,16 @@
 package org.apache.cordova.firebase;
 
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.Context;
+
+import androidx.core.app.NotificationCompat;
 
 import com.dmarc.cordovacall.MyConnectionService; // TODO dereference by switching to implicit intent
 import org.apache.cordova.firebase.FirebasePluginMessageReceiver;
@@ -20,16 +26,25 @@ import org.json.JSONObject;
 
 public class CustomFCMReceiverPlugin {
     static final String TAG = "CustomFCMReceiverPlugin";
-    private CustomFCMReceiver customFCMReceiver;
+    private static CustomFCMReceiver customFCMReceiver;
 
-    private Context applicationContext;
+    private static Context applicationContext;
+
+    private static volatile boolean initialized = false;
 
     public void initialize(Context initialApplicationContext) {
+        // Always update the context in case it changed
+        applicationContext = initialApplicationContext;
+
+        if (initialized) {
+            Log.d(TAG, "Already initialized, skipping duplicate registration");
+            return;
+        }
         Log.d(TAG, "initialize");
         try {
             Log.d(TAG, "initialApplicationContext: " + initialApplicationContext.toString());
-            applicationContext = initialApplicationContext;
             customFCMReceiver = new CustomFCMReceiver();
+            initialized = true;
         } catch (Exception e) {
             handleException("Initializing plugin", e);
         }
@@ -43,7 +58,7 @@ public class CustomFCMReceiverPlugin {
         handleError(description + ": " + exception.toString());
     }
 
-    private boolean inspectAndHandleMessageData(Map<String, String> data) throws JSONException {
+    private static boolean inspectAndHandleMessageData(Map<String, String> data) throws JSONException {
         boolean isHandled = false;
         Log.d(TAG, "inspectAndHandleMessageData: " + data);
 
@@ -59,15 +74,16 @@ public class CustomFCMReceiverPlugin {
             isHandled = true;
             int total = payload.optInt("total", -1);
             if (total >= 0) {
-                FirebasePlugin.persistBadgeNumber(this.applicationContext, total);
-                ShortcutBadger.applyCount(this.applicationContext, total);
+                FirebasePlugin.persistBadgeNumber(applicationContext, total);
+                ShortcutBadger.applyCount(applicationContext, total);
+                updateBadgeNotification(total);
                 Log.d(TAG, "Persisted badge_update total=" + total);
             }
         } else if (type.equals("incoming_phone_call") || type.equals("incoming_video_call")) {
             isHandled = true;
 
             Intent intent = new Intent("INCOMING_CALL_INVITE");
-            intent.setComponent(new ComponentName(this.applicationContext, MyConnectionService.class));
+            intent.setComponent(new ComponentName(applicationContext, MyConnectionService.class));
             intent.putExtra("payload", payloadString);
 
             // When you call startService() for an Android Service that is already running, a new instance of the service is not created.
@@ -76,13 +92,57 @@ public class CustomFCMReceiverPlugin {
             // enabling it to process new requests or update its state without creating redundant instances.
             // The ConnectionService needs to be started if for any reason its not currently running.
             Log.d(TAG, "launching startService() intent for MyConnectionService...");
-            this.applicationContext.startService(intent);
+            applicationContext.startService(intent);
         }
 
         return isHandled;
     }
 
-    private class CustomFCMReceiver extends FirebasePluginMessageReceiver {
+    private static final String BADGE_CHANNEL_ID = "iotum_badge_channel";
+    private static final int BADGE_NOTIFICATION_ID = 9999;
+
+    /**
+     * Posts (or cancels) a silent, invisible notification whose sole purpose is to
+     * carry the badge count for launchers (like Pixel) that derive badge numbers
+     * from active notifications rather than ShortcutBadger.
+     */
+    private static void updateBadgeNotification(int count) {
+        NotificationManager nm = (NotificationManager) applicationContext.getSystemService(Context.NOTIFICATION_SERVICE);
+        if (nm == null) return;
+
+        if (count <= 0) {
+            nm.cancel(BADGE_NOTIFICATION_ID);
+            return;
+        }
+
+        // Create a low-importance channel (no sound, no vibration, no heads-up)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = nm.getNotificationChannel(BADGE_CHANNEL_ID);
+            if (channel == null) {
+                channel = new NotificationChannel(
+                        BADGE_CHANNEL_ID,
+                        "Badge Updates",
+                        NotificationManager.IMPORTANCE_MIN);
+                channel.setShowBadge(true);
+                channel.enableLights(false);
+                channel.enableVibration(false);
+                channel.setSound(null, null);
+                nm.createNotificationChannel(channel);
+            }
+        }
+
+        Notification notification = new NotificationCompat.Builder(applicationContext, BADGE_CHANNEL_ID)
+                .setSmallIcon(applicationContext.getApplicationInfo().icon)
+                .setNumber(count)
+                .setPriority(NotificationCompat.PRIORITY_MIN)
+                .setVisibility(NotificationCompat.VISIBILITY_SECRET)
+                .setOngoing(false)
+                .build();
+
+        nm.notify(BADGE_NOTIFICATION_ID, notification);
+    }
+
+    private static class CustomFCMReceiver extends FirebasePluginMessageReceiver {
         @Override
         public boolean onMessageReceived(RemoteMessage remoteMessage) {
             Log.d("CustomFCMReceiver", "onMessageReceived");
