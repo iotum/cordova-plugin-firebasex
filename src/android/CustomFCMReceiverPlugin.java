@@ -78,14 +78,14 @@ public class CustomFCMReceiverPlugin {
 
         String type = payload.optString("type");
         if (type.equals("badge_update")) {
-            isHandled = true;
             int total = payload.optInt("total", -1);
             if (total >= 0) {
                 Context ctx = applicationContext;
                 if (ctx == null) {
                     Log.w(TAG, "Cannot handle badge_update: context is null");
-                    return isHandled;
+                    return false;
                 }
+                isHandled = true;
                 FirebasePlugin.persistBadgeNumber(ctx, total);
                 // Samsung launchers use ShortcutBadger; other launchers (e.g., Pixel)
                 // derive badges from active notifications. Use only one mechanism per
@@ -98,13 +98,12 @@ public class CustomFCMReceiverPlugin {
                 Log.d(TAG, "Persisted badge_update total=" + total);
             }
         } else if (type.equals("incoming_phone_call") || type.equals("incoming_video_call")) {
-            isHandled = true;
-
             Context ctx = applicationContext;
             if (ctx == null) {
                 Log.w(TAG, "Cannot handle call intent: context is null");
-                return isHandled;
+                return false;
             }
+            isHandled = true;
 
             Intent intent = new Intent("INCOMING_CALL_INVITE");
             intent.setComponent(new ComponentName(ctx, MyConnectionService.class));
@@ -123,7 +122,8 @@ public class CustomFCMReceiverPlugin {
     }
 
     private static final String BADGE_CHANNEL_ID = "iotum_badge_channel";
-    private static final int BADGE_NOTIFICATION_ID = 9999;
+    private static final String BADGE_NOTIFICATION_TAG = "iotum_badge";
+    private static final int BADGE_NOTIFICATION_ID = 0;
 
     /**
      * Returns true if the device is manufactured by Samsung, which uses
@@ -172,7 +172,7 @@ public class CustomFCMReceiverPlugin {
         // leaving a stale badge notification after permissions are revoked.
         if (count <= 0) {
             try {
-                nm.cancel(BADGE_NOTIFICATION_ID);
+                nm.cancel(BADGE_NOTIFICATION_TAG, BADGE_NOTIFICATION_ID);
             } catch (SecurityException e) {
                 Log.w(TAG, "SecurityException cancelling badge notification: " + e.getMessage());
             }
@@ -226,7 +226,7 @@ public class CustomFCMReceiverPlugin {
                 .build();
 
         try {
-            nm.notify(BADGE_NOTIFICATION_ID, notification);
+            nm.notify(BADGE_NOTIFICATION_TAG, BADGE_NOTIFICATION_ID, notification);
         } catch (SecurityException e) {
             Log.w(TAG, "SecurityException posting badge notification: " + e.getMessage());
         }
