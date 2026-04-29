@@ -30,8 +30,6 @@ import android.graphics.Canvas;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
-import me.leolin.shortcutbadger.ShortcutBadger;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -433,7 +431,6 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
             int badgeNumber = FirebasePlugin.getPersistedBadgeNumber(getApplicationContext());
             Log.d(TAG, "Badge number: " + badgeNumber);
             notificationBuilder.setNumber(badgeNumber);
-            ShortcutBadger.applyCount(getApplicationContext(), badgeNumber);
 
             // Build notification
             Notification notification = notificationBuilder.build();
