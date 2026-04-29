@@ -433,9 +433,6 @@ public class FirebasePluginMessagingService extends FirebaseMessagingService {
             int badgeNumber = FirebasePlugin.getPersistedBadgeNumber(getApplicationContext());
             Log.d(TAG, "Badge number: " + badgeNumber);
             notificationBuilder.setNumber(badgeNumber);
-            if (badgeNumber > 0) {
-                notificationBuilder.setSubText(String.valueOf(badgeNumber));
-            }
             ShortcutBadger.applyCount(getApplicationContext(), badgeNumber);
 
             // Build notification
