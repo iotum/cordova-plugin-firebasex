@@ -6,4 +6,7 @@
 .build-browser
 package-lock.json
 node_modules
+src/android/.gradle/
+src/android/gradle/
+src/android/gradlew
 cordova-plugin-firebase.code-workspace
