@@ -1,3 +1,6 @@
+# Version 1.0.4
+* (android) fix: apply persisted badge count to `notificationBuilder.setNumber()` so the badge renders correctly on launchers with numeric badge support.
+
 # Version 18.0.7
 * (android) fix: remove Google Services plugin configuration so it doesn't conflict with `cordova-android@14` and use Cordova config to enable the plugin instead.
   * Resolves [#931](https://github.com/dpa99c/cordova-plugin-firebasex/issues/931)
