@@ -43,6 +43,23 @@ public class CustomFCMReceiverPlugin {
         handleError(description + ": " + exception.toString());
     }
 
+    private Integer getBadgeTotal(JSONObject payload, String type) {
+        int total = -1;
+
+        if ("badge_update".equals(type)) {
+            total = payload.optInt("total", -1);
+        }
+
+        if (total < 0) {
+            JSONObject badgeCounts = payload.optJSONObject("badge_counts");
+            if (badgeCounts != null) {
+                total = badgeCounts.optInt("total", -1);
+            }
+        }
+
+        return total >= 0 ? total : null;
+    }
+
     private boolean inspectAndHandleMessageData(Map<String, String> data) throws JSONException {
         boolean isHandled = false;
         Log.d(TAG, "inspectAndHandleMessageData: " + data);
@@ -55,14 +72,15 @@ public class CustomFCMReceiverPlugin {
         JSONObject payload = new JSONObject(payloadString);
 
         String type = payload.optString("type");
+        Integer badgeTotal = getBadgeTotal(payload, type);
+        if (badgeTotal != null) {
+            FirebasePlugin.persistBadgeNumber(this.applicationContext, badgeTotal);
+            ShortcutBadger.applyCount(this.applicationContext, badgeTotal);
+            Log.d(TAG, "Persisted badge total=" + badgeTotal + " for type=" + type);
+        }
+
         if (type.equals("badge_update")) {
             isHandled = true;
-            int total = payload.optInt("total", -1);
-            if (total >= 0) {
-                FirebasePlugin.persistBadgeNumber(this.applicationContext, total);
-                ShortcutBadger.applyCount(this.applicationContext, total);
-                Log.d(TAG, "Persisted badge_update total=" + total);
-            }
         } else if (type.equals("incoming_phone_call") || type.equals("incoming_video_call")) {
             isHandled = true;
 

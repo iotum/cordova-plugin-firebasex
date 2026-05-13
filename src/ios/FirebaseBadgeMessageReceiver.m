@@ -22,11 +22,24 @@
 
     NSDictionary *payload = (NSDictionary *)parsed;
     NSString *type = payload[@"type"];
-    if (![@"badge_update" isEqualToString:type]) {
-        return false;
+    BOOL isBadgeUpdate = [@"badge_update" isEqualToString:type];
+
+    NSDictionary *badgeCounts = nil;
+    id badgeCountsValue = payload[@"badge_counts"];
+    if ([badgeCountsValue isKindOfClass:[NSDictionary class]]) {
+        badgeCounts = (NSDictionary *)badgeCountsValue;
     }
 
-    id totalValue = payload[@"total"];
+    id totalValue = nil;
+    if (isBadgeUpdate) {
+        totalValue = payload[@"total"];
+        if ((!totalValue || ![totalValue respondsToSelector:@selector(intValue)]) && badgeCounts != nil) {
+            totalValue = badgeCounts[@"total"];
+        }
+    } else if (badgeCounts != nil) {
+        totalValue = badgeCounts[@"total"];
+    }
+
     if (!totalValue || ![totalValue respondsToSelector:@selector(intValue)]) {
         return false;
     }
@@ -36,7 +49,7 @@
         [[UIApplication sharedApplication] setApplicationIconBadgeNumber:MAX(0, total)];
     });
 
-    return true;
+    return isBadgeUpdate;
 }
 
 @end
