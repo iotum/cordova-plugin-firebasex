@@ -44,20 +44,26 @@ public class CustomFCMReceiverPlugin {
     }
 
     private Integer getBadgeTotal(JSONObject payload, String type) {
-        int total = -1;
+        Integer total = null;
 
         if ("badge_update".equals(type)) {
-            total = payload.optInt("total", -1);
-        }
-
-        if (total < 0) {
-            JSONObject badgeCounts = payload.optJSONObject("badge_counts");
-            if (badgeCounts != null) {
-                total = badgeCounts.optInt("total", -1);
+            int candidateTotal = payload.optInt("total", -1);
+            if (candidateTotal >= 0) {
+                total = candidateTotal;
             }
         }
 
-        return total >= 0 ? total : null;
+        if (total == null) {
+            JSONObject badgeCounts = payload.optJSONObject("badge_counts");
+            if (badgeCounts != null) {
+                int candidateTotal = badgeCounts.optInt("total", -1);
+                if (candidateTotal >= 0) {
+                    total = candidateTotal;
+                }
+            }
+        }
+
+        return total;
     }
 
     private boolean inspectAndHandleMessageData(Map<String, String> data) throws JSONException {

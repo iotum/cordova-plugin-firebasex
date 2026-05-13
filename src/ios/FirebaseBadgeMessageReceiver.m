@@ -33,7 +33,7 @@
     id totalValue = nil;
     if (isBadgeUpdate) {
         totalValue = payload[@"total"];
-        if ((!totalValue || ![totalValue respondsToSelector:@selector(intValue)]) && badgeCounts != nil) {
+        if (badgeCounts != nil && ![totalValue respondsToSelector:@selector(intValue)]) {
             totalValue = badgeCounts[@"total"];
         }
     } else if (badgeCounts != nil) {
