@@ -21,6 +21,7 @@ import com.google.firebase.messaging.RemoteMessage;
 import me.leolin.shortcutbadger.ShortcutBadger;
 
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -34,7 +35,7 @@ public class CustomFCMReceiverPlugin {
     private static volatile boolean initialized = false;
 
     /** Tracks the last-processed badge timestamp to avoid processing out-of-order updates. */
-    private static volatile long lastBadgeTimestampMs = 0;
+    private static final AtomicLong lastBadgeTimestampMs = new AtomicLong(0);
 
     public void initialize(Context initialApplicationContext) {
         synchronized (CustomFCMReceiverPlugin.class) {
@@ -126,30 +127,31 @@ public class CustomFCMReceiverPlugin {
         Integer badgeTotal = getBadgeTotal(payload, type);
         if (badgeTotal != null) {
             long timestampMs = getBadgeTimestampMs(payload, type);
-            // Only process if timestamp is newer than the last processed one (or if no timestamp provided)
-            if (timestampMs > 0 && timestampMs <= lastBadgeTimestampMs) {
-                Log.d(TAG, "Skipping stale badge update: timestamp_ms=" + timestampMs
-                        + " <= lastProcessed=" + lastBadgeTimestampMs);
-            } else {
-                if (timestampMs > 0) {
-                    lastBadgeTimestampMs = timestampMs;
-                }
-                Context ctx = applicationContext;
-                if (ctx != null) {
-                    FirebasePlugin.persistBadgeNumber(ctx, badgeTotal);
-                    // Samsung launchers use ShortcutBadger; other launchers (e.g., Pixel)
-                    // derive badges from active notifications. Use only one mechanism per
-                    // device to avoid double-counting.
-                    if (isSamsungDevice()) {
-                        ShortcutBadger.applyCount(ctx, badgeTotal);
-                    } else {
-                        updateBadgeNotification(badgeTotal);
-                    }
-                    Log.d(TAG, "Persisted badge total=" + badgeTotal + " for type=" + type
-                            + " timestamp_ms=" + timestampMs);
+            // Only process if timestamp is newer than the last processed one (or if no timestamp provided).
+            // Use compareAndSet loop for thread-safe atomic update.
+            if (timestampMs > 0) {
+                long current = lastBadgeTimestampMs.get();
+                if (timestampMs <= current) {
+                    Log.d(TAG, "Skipping stale badge update: timestamp_ms=" + timestampMs
+                            + " <= lastProcessed=" + current);
                 } else {
-                    Log.w(TAG, "Cannot apply badge update: context is null");
+                    // Attempt atomic update; if another thread updated in the meantime, re-check
+                    while (!lastBadgeTimestampMs.compareAndSet(current, timestampMs)) {
+                        current = lastBadgeTimestampMs.get();
+                        if (timestampMs <= current) {
+                            Log.d(TAG, "Skipping stale badge update after CAS retry: timestamp_ms=" + timestampMs
+                                    + " <= lastProcessed=" + current);
+                            badgeTotal = null;
+                            break;
+                        }
+                    }
+                    if (badgeTotal != null) {
+                        applyBadge(badgeTotal, type, timestampMs);
+                    }
                 }
+            } else {
+                // No timestamp provided — always process (backward compatible)
+                applyBadge(badgeTotal, type, 0);
             }
         }
 
@@ -177,6 +179,26 @@ public class CustomFCMReceiverPlugin {
         }
 
         return isHandled;
+    }
+
+    /** Applies the badge count using the appropriate device-specific mechanism. */
+    private static void applyBadge(int badgeTotal, String type, long timestampMs) {
+        Context ctx = applicationContext;
+        if (ctx != null) {
+            FirebasePlugin.persistBadgeNumber(ctx, badgeTotal);
+            // Samsung launchers use ShortcutBadger; other launchers (e.g., Pixel)
+            // derive badges from active notifications. Use only one mechanism per
+            // device to avoid double-counting.
+            if (isSamsungDevice()) {
+                ShortcutBadger.applyCount(ctx, badgeTotal);
+            } else {
+                updateBadgeNotification(badgeTotal);
+            }
+            Log.d(TAG, "Persisted badge total=" + badgeTotal + " for type=" + type
+                    + " timestamp_ms=" + timestampMs);
+        } else {
+            Log.w(TAG, "Cannot apply badge update: context is null");
+        }
     }
 
     private static final String BADGE_CHANNEL_ID = "iotum_badge_channel";

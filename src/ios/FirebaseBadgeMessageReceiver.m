@@ -1,8 +1,7 @@
 #import "FirebaseBadgeMessageReceiver.h"
 #import <UIKit/UIKit.h>
 
-@implementation FirebaseBadgeMessageReceiver {
-}
+@implementation FirebaseBadgeMessageReceiver
 
 static long long _lastBadgeTimestampMs = 0;
 
@@ -76,13 +75,15 @@ static long long _lastBadgeTimestampMs = 0;
 
     // Check timestamp to avoid processing out-of-order badge updates
     long long timestampMs = [self badgeTimestampMsFromPayload:payload type:type];
-    if (timestampMs > 0 && timestampMs <= _lastBadgeTimestampMs) {
-        NSLog(@"FirebaseBadgeMessageReceiver: Skipping stale badge update: timestamp_ms=%lld <= lastProcessed=%lld",
-              timestampMs, _lastBadgeTimestampMs);
-        return isBadgeUpdate;
-    }
-    if (timestampMs > 0) {
-        _lastBadgeTimestampMs = timestampMs;
+    @synchronized ([FirebaseBadgeMessageReceiver class]) {
+        if (timestampMs > 0 && timestampMs <= _lastBadgeTimestampMs) {
+            NSLog(@"FirebaseBadgeMessageReceiver: Skipping stale badge update: timestamp_ms=%lld <= lastProcessed=%lld",
+                  timestampMs, _lastBadgeTimestampMs);
+            return isBadgeUpdate;
+        }
+        if (timestampMs > 0) {
+            _lastBadgeTimestampMs = timestampMs;
+        }
     }
 
     int total = [totalValue intValue];
