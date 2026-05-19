@@ -77,13 +77,17 @@ static NSString *const kLastBadgeTimestampKey = @"FirebaseBadgeMessageReceiver_l
     long long timestampMs = [self badgeTimestampMsFromPayload:payload type:type];
     @synchronized ([FirebaseBadgeMessageReceiver class]) {
         if (timestampMs > 0) {
-            long long lastTimestamp = (long long)[[NSUserDefaults standardUserDefaults] doubleForKey:kLastBadgeTimestampKey];
+            long long lastTimestamp = 0;
+            NSNumber *stored = [[NSUserDefaults standardUserDefaults] objectForKey:kLastBadgeTimestampKey];
+            if (stored != nil) {
+                lastTimestamp = [stored longLongValue];
+            }
             if (timestampMs <= lastTimestamp) {
                 NSLog(@"FirebaseBadgeMessageReceiver: Skipping stale badge update: timestamp_ms=%lld <= lastProcessed=%lld",
                       timestampMs, lastTimestamp);
                 return isBadgeUpdate;
             }
-            [[NSUserDefaults standardUserDefaults] setDouble:(double)timestampMs forKey:kLastBadgeTimestampKey];
+            [[NSUserDefaults standardUserDefaults] setObject:[NSNumber numberWithLongLong:timestampMs] forKey:kLastBadgeTimestampKey];
         }
     }
 

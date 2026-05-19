@@ -40,7 +40,7 @@ public class CustomFCMReceiverPlugin {
 
     /** Tracks the last-processed badge timestamp to avoid processing out-of-order updates.
      *  Initialized lazily from SharedPreferences so state survives app restarts. */
-    private static final AtomicLong lastBadgeTimestampMs = new AtomicLong(-1);
+    private static final AtomicLong lastBadgeTimestampMs = new AtomicLong(0);
     private static volatile boolean timestampInitialized = false;
 
     public void initialize(Context initialApplicationContext) {
@@ -60,6 +60,7 @@ public class CustomFCMReceiverPlugin {
             try {
                 Log.d(TAG, "applicationContext: " + applicationContext.toString());
                 customFCMReceiver = new CustomFCMReceiver();
+                ensureTimestampInitialized();
                 initialized = true;
             } catch (Exception e) {
                 handleException("Initializing plugin", e);
