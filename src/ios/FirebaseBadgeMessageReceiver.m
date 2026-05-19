@@ -1,7 +1,17 @@
 #import "FirebaseBadgeMessageReceiver.h"
 #import <UIKit/UIKit.h>
 
+static NSString *const kLastBadgeTimestampKey = @"FirebaseBadgeMessageReceiver_lastBadgeTimestampMs";
+
 @implementation FirebaseBadgeMessageReceiver
+
+- (long long)lastBadgeTimestamp {
+    return (long long)[[NSUserDefaults standardUserDefaults] doubleForKey:kLastBadgeTimestampKey];
+}
+
+- (void)setLastBadgeTimestamp:(long long)timestampMs {
+    [[NSUserDefaults standardUserDefaults] setDouble:(double)timestampMs forKey:kLastBadgeTimestampKey];
+}
 
 - (bool)sendNotification:(NSDictionary *)userInfo {
     NSString *payloadString = userInfo[@"payload"];
@@ -43,6 +53,28 @@
     if (!totalValue || ![totalValue respondsToSelector:@selector(intValue)]) {
         return false;
     }
+
+    // Extract timestamp_ms from the same location as total
+    long long timestampMs = -1;
+    if (isBadgeUpdate) {
+        id tsValue = payload[@"timestamp_ms"];
+        if ([tsValue respondsToSelector:@selector(longLongValue)]) {
+            timestampMs = [tsValue longLongValue];
+        }
+    } else if (badgeCounts != nil) {
+        id tsValue = badgeCounts[@"timestamp_ms"];
+        if ([tsValue respondsToSelector:@selector(longLongValue)]) {
+            timestampMs = [tsValue longLongValue];
+        }
+    }
+
+    long long lastTimestamp = [self lastBadgeTimestamp];
+    if (timestampMs <= lastTimestamp) {
+        NSLog(@"FirebaseBadgeMessageReceiver: Skipping stale badge update: timestamp_ms=%lld <= lastTimestamp=%lld", timestampMs, lastTimestamp);
+        return isBadgeUpdate;
+    }
+
+    [self setLastBadgeTimestamp:timestampMs];
 
     int total = [totalValue intValue];
     dispatch_async(dispatch_get_main_queue(), ^{

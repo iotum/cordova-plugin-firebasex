@@ -13,6 +13,8 @@ import com.google.firebase.messaging.RemoteMessage;
 
 import me.leolin.shortcutbadger.ShortcutBadger;
 
+import android.content.SharedPreferences;
+
 import java.util.Map;
 
 import org.json.JSONException;
@@ -20,6 +22,8 @@ import org.json.JSONObject;
 
 public class CustomFCMReceiverPlugin {
     static final String TAG = "CustomFCMReceiverPlugin";
+    private static final String PREFS_NAME = "CustomFCMReceiverPluginPrefs";
+    private static final String PREF_LAST_BADGE_TIMESTAMP = "lastBadgeTimestampMs";
     private CustomFCMReceiver customFCMReceiver;
 
     private Context applicationContext;
@@ -41,6 +45,29 @@ public class CustomFCMReceiverPlugin {
 
     protected static void handleException(String description, Exception exception) {
         handleError(description + ": " + exception.toString());
+    }
+
+    private long getLastBadgeTimestamp() {
+        SharedPreferences prefs = applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        return prefs.getLong(PREF_LAST_BADGE_TIMESTAMP, 0);
+    }
+
+    private void setLastBadgeTimestamp(long timestampMs) {
+        SharedPreferences prefs = applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        prefs.edit().putLong(PREF_LAST_BADGE_TIMESTAMP, timestampMs).apply();
+    }
+
+    private long getBadgeTimestamp(JSONObject payload, String type) {
+        if ("badge_update".equals(type)) {
+            return payload.optLong("timestamp_ms", -1);
+        }
+
+        JSONObject badgeCounts = payload.optJSONObject("badge_counts");
+        if (badgeCounts != null) {
+            return badgeCounts.optLong("timestamp_ms", -1);
+        }
+
+        return -1;
     }
 
     private Integer getBadgeTotal(JSONObject payload, String type) {
@@ -80,9 +107,16 @@ public class CustomFCMReceiverPlugin {
         String type = payload.optString("type");
         Integer badgeTotal = getBadgeTotal(payload, type);
         if (badgeTotal != null) {
-            FirebasePlugin.persistBadgeNumber(this.applicationContext, badgeTotal);
-            ShortcutBadger.applyCount(this.applicationContext, badgeTotal);
-            Log.d(TAG, "Persisted badge total=" + badgeTotal + " for type=" + type);
+            long timestampMs = getBadgeTimestamp(payload, type);
+            long lastTimestamp = getLastBadgeTimestamp();
+            if (timestampMs > lastTimestamp) {
+                setLastBadgeTimestamp(timestampMs);
+                FirebasePlugin.persistBadgeNumber(this.applicationContext, badgeTotal);
+                ShortcutBadger.applyCount(this.applicationContext, badgeTotal);
+                Log.d(TAG, "Persisted badge total=" + badgeTotal + " for type=" + type + " timestamp_ms=" + timestampMs);
+            } else {
+                Log.d(TAG, "Skipping stale badge update: timestamp_ms=" + timestampMs + " <= lastTimestamp=" + lastTimestamp);
+            }
         }
 
         if (type.equals("badge_update")) {
