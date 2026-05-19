@@ -20,6 +20,8 @@ import com.google.firebase.messaging.RemoteMessage;
 
 import me.leolin.shortcutbadger.ShortcutBadger;
 
+import android.content.SharedPreferences;
+
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -28,14 +30,18 @@ import org.json.JSONObject;
 
 public class CustomFCMReceiverPlugin {
     static final String TAG = "CustomFCMReceiverPlugin";
+    private static final String PREFS_NAME = "CustomFCMReceiverPluginPrefs";
+    private static final String PREF_LAST_BADGE_TIMESTAMP = "lastBadgeTimestampMs";
     private static volatile CustomFCMReceiver customFCMReceiver;
 
     private static volatile Context applicationContext;
 
     private static volatile boolean initialized = false;
 
-    /** Tracks the last-processed badge timestamp to avoid processing out-of-order updates. */
-    private static final AtomicLong lastBadgeTimestampMs = new AtomicLong(0);
+    /** Tracks the last-processed badge timestamp to avoid processing out-of-order updates.
+     *  Initialized lazily from SharedPreferences so state survives app restarts. */
+    private static final AtomicLong lastBadgeTimestampMs = new AtomicLong(-1);
+    private static volatile boolean timestampInitialized = false;
 
     public void initialize(Context initialApplicationContext) {
         synchronized (CustomFCMReceiverPlugin.class) {
@@ -67,6 +73,39 @@ public class CustomFCMReceiverPlugin {
 
     protected static void handleException(String description, Exception exception) {
         handleError(description + ": " + exception.toString());
+    }
+
+    /**
+     * Ensures the AtomicLong is initialized from SharedPreferences (once).
+     * This allows the timestamp state to survive app restarts.
+     */
+    private static void ensureTimestampInitialized() {
+        if (!timestampInitialized) {
+            synchronized (CustomFCMReceiverPlugin.class) {
+                if (!timestampInitialized) {
+                    Context ctx = applicationContext;
+                    if (ctx != null) {
+                        SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+                        long persisted = prefs.getLong(PREF_LAST_BADGE_TIMESTAMP, 0);
+                        lastBadgeTimestampMs.set(persisted);
+                    } else {
+                        lastBadgeTimestampMs.set(0);
+                    }
+                    timestampInitialized = true;
+                }
+            }
+        }
+    }
+
+    /**
+     * Persists the last badge timestamp to SharedPreferences so it survives app restarts.
+     */
+    private static void persistBadgeTimestamp(long timestampMs) {
+        Context ctx = applicationContext;
+        if (ctx != null) {
+            SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+            prefs.edit().putLong(PREF_LAST_BADGE_TIMESTAMP, timestampMs).apply();
+        }
     }
 
     private static Integer getBadgeTotal(JSONObject payload, String type) {
@@ -130,6 +169,7 @@ public class CustomFCMReceiverPlugin {
             // Only process if timestamp is newer than the last processed one (or if no timestamp provided).
             // Use compareAndSet loop for thread-safe atomic update.
             if (timestampMs > 0) {
+                ensureTimestampInitialized();
                 long current = lastBadgeTimestampMs.get();
                 if (timestampMs <= current) {
                     Log.d(TAG, "Skipping stale badge update: timestamp_ms=" + timestampMs
@@ -146,6 +186,7 @@ public class CustomFCMReceiverPlugin {
                         }
                     }
                     if (badgeTotal != null) {
+                        persistBadgeTimestamp(timestampMs);
                         applyBadge(badgeTotal, type, timestampMs);
                     }
                 }

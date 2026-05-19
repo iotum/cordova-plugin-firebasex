@@ -3,7 +3,7 @@
 
 @implementation FirebaseBadgeMessageReceiver
 
-static long long _lastBadgeTimestampMs = 0;
+static NSString *const kLastBadgeTimestampKey = @"FirebaseBadgeMessageReceiver_lastBadgeTimestampMs";
 
 /**
  * Extracts the badge timestamp_ms from the payload. Looks for it at the top
@@ -76,13 +76,14 @@ static long long _lastBadgeTimestampMs = 0;
     // Check timestamp to avoid processing out-of-order badge updates
     long long timestampMs = [self badgeTimestampMsFromPayload:payload type:type];
     @synchronized ([FirebaseBadgeMessageReceiver class]) {
-        if (timestampMs > 0 && timestampMs <= _lastBadgeTimestampMs) {
-            NSLog(@"FirebaseBadgeMessageReceiver: Skipping stale badge update: timestamp_ms=%lld <= lastProcessed=%lld",
-                  timestampMs, _lastBadgeTimestampMs);
-            return isBadgeUpdate;
-        }
         if (timestampMs > 0) {
-            _lastBadgeTimestampMs = timestampMs;
+            long long lastTimestamp = (long long)[[NSUserDefaults standardUserDefaults] doubleForKey:kLastBadgeTimestampKey];
+            if (timestampMs <= lastTimestamp) {
+                NSLog(@"FirebaseBadgeMessageReceiver: Skipping stale badge update: timestamp_ms=%lld <= lastProcessed=%lld",
+                      timestampMs, lastTimestamp);
+                return isBadgeUpdate;
+            }
+            [[NSUserDefaults standardUserDefaults] setDouble:(double)timestampMs forKey:kLastBadgeTimestampKey];
         }
     }
 
