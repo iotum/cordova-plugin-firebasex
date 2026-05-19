@@ -108,14 +108,21 @@ public class CustomFCMReceiverPlugin {
         Integer badgeTotal = getBadgeTotal(payload, type);
         if (badgeTotal != null) {
             long timestampMs = getBadgeTimestamp(payload, type);
-            long lastTimestamp = getLastBadgeTimestamp();
-            if (timestampMs > lastTimestamp) {
-                setLastBadgeTimestamp(timestampMs);
+            boolean shouldProcess = true;
+            if (timestampMs > 0) {
+                long lastTimestamp = getLastBadgeTimestamp();
+                if (timestampMs <= lastTimestamp) {
+                    shouldProcess = false;
+                    Log.d(TAG, "Skipping stale badge update: timestamp_ms=" + timestampMs + " <= lastTimestamp=" + lastTimestamp);
+                }
+            }
+            if (shouldProcess) {
+                if (timestampMs > 0) {
+                    setLastBadgeTimestamp(timestampMs);
+                }
                 FirebasePlugin.persistBadgeNumber(this.applicationContext, badgeTotal);
                 ShortcutBadger.applyCount(this.applicationContext, badgeTotal);
                 Log.d(TAG, "Persisted badge total=" + badgeTotal + " for type=" + type + " timestamp_ms=" + timestampMs);
-            } else {
-                Log.d(TAG, "Skipping stale badge update: timestamp_ms=" + timestampMs + " <= lastTimestamp=" + lastTimestamp);
             }
         }
 

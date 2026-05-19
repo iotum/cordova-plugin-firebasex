@@ -69,12 +69,21 @@ static NSString *const kLastBadgeTimestampKey = @"FirebaseBadgeMessageReceiver_l
     }
 
     long long lastTimestamp = [self lastBadgeTimestamp];
-    if (timestampMs <= lastTimestamp) {
-        NSLog(@"FirebaseBadgeMessageReceiver: Skipping stale badge update: timestamp_ms=%lld <= lastTimestamp=%lld", timestampMs, lastTimestamp);
+    BOOL shouldProcess = YES;
+    if (timestampMs > 0) {
+        if (timestampMs <= lastTimestamp) {
+            shouldProcess = NO;
+            NSLog(@"FirebaseBadgeMessageReceiver: Skipping stale badge update: timestamp_ms=%lld <= lastTimestamp=%lld", timestampMs, lastTimestamp);
+        }
+    }
+
+    if (!shouldProcess) {
         return isBadgeUpdate;
     }
 
-    [self setLastBadgeTimestamp:timestampMs];
+    if (timestampMs > 0) {
+        [self setLastBadgeTimestamp:timestampMs];
+    }
 
     int total = [totalValue intValue];
     dispatch_async(dispatch_get_main_queue(), ^{
