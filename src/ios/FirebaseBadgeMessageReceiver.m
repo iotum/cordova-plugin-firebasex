@@ -1,7 +1,37 @@
 #import "FirebaseBadgeMessageReceiver.h"
 #import <UIKit/UIKit.h>
 
-@implementation FirebaseBadgeMessageReceiver
+@implementation FirebaseBadgeMessageReceiver {
+}
+
+static long long _lastBadgeTimestampMs = 0;
+
+/**
+ * Extracts the badge timestamp_ms from the payload. Looks for it at the top
+ * level first (for dedicated badge_update messages) then inside badge_counts
+ * (for piggyback badge data on other payload types).
+ */
+- (long long)badgeTimestampMsFromPayload:(NSDictionary *)payload type:(NSString *)type {
+    if ([@"badge_update" isEqualToString:type]) {
+        id tsValue = payload[@"timestamp_ms"];
+        if ([tsValue respondsToSelector:@selector(longLongValue)]) {
+            long long ts = [tsValue longLongValue];
+            if (ts > 0) return ts;
+        }
+    }
+
+    id badgeCountsValue = payload[@"badge_counts"];
+    if ([badgeCountsValue isKindOfClass:[NSDictionary class]]) {
+        NSDictionary *badgeCounts = (NSDictionary *)badgeCountsValue;
+        id tsValue = badgeCounts[@"timestamp_ms"];
+        if ([tsValue respondsToSelector:@selector(longLongValue)]) {
+            long long ts = [tsValue longLongValue];
+            if (ts > 0) return ts;
+        }
+    }
+
+    return 0;
+}
 
 - (bool)sendNotification:(NSDictionary *)userInfo {
     NSString *payloadString = userInfo[@"payload"];
@@ -22,13 +52,37 @@
 
     NSDictionary *payload = (NSDictionary *)parsed;
     NSString *type = payload[@"type"];
-    if (![@"badge_update" isEqualToString:type]) {
+    BOOL isBadgeUpdate = [@"badge_update" isEqualToString:type];
+
+    NSDictionary *badgeCounts = nil;
+    id badgeCountsValue = payload[@"badge_counts"];
+    if ([badgeCountsValue isKindOfClass:[NSDictionary class]]) {
+        badgeCounts = (NSDictionary *)badgeCountsValue;
+    }
+
+    id totalValue = nil;
+    if (isBadgeUpdate) {
+        totalValue = payload[@"total"];
+        if (badgeCounts != nil && ![totalValue respondsToSelector:@selector(intValue)]) {
+            totalValue = badgeCounts[@"total"];
+        }
+    } else if (badgeCounts != nil) {
+        totalValue = badgeCounts[@"total"];
+    }
+
+    if (!totalValue || ![totalValue respondsToSelector:@selector(intValue)]) {
         return false;
     }
 
-    id totalValue = payload[@"total"];
-    if (!totalValue || ![totalValue respondsToSelector:@selector(intValue)]) {
-        return false;
+    // Check timestamp to avoid processing out-of-order badge updates
+    long long timestampMs = [self badgeTimestampMsFromPayload:payload type:type];
+    if (timestampMs > 0 && timestampMs <= _lastBadgeTimestampMs) {
+        NSLog(@"FirebaseBadgeMessageReceiver: Skipping stale badge update: timestamp_ms=%lld <= lastProcessed=%lld",
+              timestampMs, _lastBadgeTimestampMs);
+        return isBadgeUpdate;
+    }
+    if (timestampMs > 0) {
+        _lastBadgeTimestampMs = timestampMs;
     }
 
     int total = [totalValue intValue];
@@ -36,7 +90,7 @@
         [[UIApplication sharedApplication] setApplicationIconBadgeNumber:MAX(0, total)];
     });
 
-    return true;
+    return isBadgeUpdate;
 }
 
 @end

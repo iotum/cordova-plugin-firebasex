@@ -33,6 +33,9 @@ public class CustomFCMReceiverPlugin {
 
     private static volatile boolean initialized = false;
 
+    /** Tracks the last-processed badge timestamp to avoid processing out-of-order updates. */
+    private static volatile long lastBadgeTimestampMs = 0;
+
     public void initialize(Context initialApplicationContext) {
         synchronized (CustomFCMReceiverPlugin.class) {
             if (initialApplicationContext == null) {
@@ -65,6 +68,49 @@ public class CustomFCMReceiverPlugin {
         handleError(description + ": " + exception.toString());
     }
 
+    private static Integer getBadgeTotal(JSONObject payload, String type) {
+        Integer total = null;
+
+        if ("badge_update".equals(type)) {
+            int candidateTotal = payload.optInt("total", -1);
+            if (candidateTotal >= 0) {
+                total = candidateTotal;
+            }
+        }
+
+        if (total == null) {
+            JSONObject badgeCounts = payload.optJSONObject("badge_counts");
+            if (badgeCounts != null) {
+                int candidateTotal = badgeCounts.optInt("total", -1);
+                if (candidateTotal >= 0) {
+                    total = candidateTotal;
+                }
+            }
+        }
+
+        return total;
+    }
+
+    /**
+     * Extracts the badge timestamp_ms from the payload. Looks for it at the top
+     * level first (for dedicated badge_update messages) then inside badge_counts
+     * (for piggyback badge data on other payload types).
+     */
+    private static long getBadgeTimestampMs(JSONObject payload, String type) {
+        if ("badge_update".equals(type)) {
+            long ts = payload.optLong("timestamp_ms", 0);
+            if (ts > 0) return ts;
+        }
+
+        JSONObject badgeCounts = payload.optJSONObject("badge_counts");
+        if (badgeCounts != null) {
+            long ts = badgeCounts.optLong("timestamp_ms", 0);
+            if (ts > 0) return ts;
+        }
+
+        return 0;
+    }
+
     private static boolean inspectAndHandleMessageData(Map<String, String> data) throws JSONException {
         boolean isHandled = false;
         Log.d(TAG, "inspectAndHandleMessageData: " + data);
@@ -77,26 +123,38 @@ public class CustomFCMReceiverPlugin {
         JSONObject payload = new JSONObject(payloadString);
 
         String type = payload.optString("type");
-        if (type.equals("badge_update")) {
-            int total = payload.optInt("total", -1);
-            if (total >= 0) {
+        Integer badgeTotal = getBadgeTotal(payload, type);
+        if (badgeTotal != null) {
+            long timestampMs = getBadgeTimestampMs(payload, type);
+            // Only process if timestamp is newer than the last processed one (or if no timestamp provided)
+            if (timestampMs > 0 && timestampMs <= lastBadgeTimestampMs) {
+                Log.d(TAG, "Skipping stale badge update: timestamp_ms=" + timestampMs
+                        + " <= lastProcessed=" + lastBadgeTimestampMs);
+            } else {
+                if (timestampMs > 0) {
+                    lastBadgeTimestampMs = timestampMs;
+                }
                 Context ctx = applicationContext;
-                if (ctx == null) {
-                    Log.w(TAG, "Cannot handle badge_update: context is null");
-                    return false;
-                }
-                isHandled = true;
-                FirebasePlugin.persistBadgeNumber(ctx, total);
-                // Samsung launchers use ShortcutBadger; other launchers (e.g., Pixel)
-                // derive badges from active notifications. Use only one mechanism per
-                // device to avoid double-counting.
-                if (isSamsungDevice()) {
-                    ShortcutBadger.applyCount(ctx, total);
+                if (ctx != null) {
+                    FirebasePlugin.persistBadgeNumber(ctx, badgeTotal);
+                    // Samsung launchers use ShortcutBadger; other launchers (e.g., Pixel)
+                    // derive badges from active notifications. Use only one mechanism per
+                    // device to avoid double-counting.
+                    if (isSamsungDevice()) {
+                        ShortcutBadger.applyCount(ctx, badgeTotal);
+                    } else {
+                        updateBadgeNotification(badgeTotal);
+                    }
+                    Log.d(TAG, "Persisted badge total=" + badgeTotal + " for type=" + type
+                            + " timestamp_ms=" + timestampMs);
                 } else {
-                    updateBadgeNotification(total);
+                    Log.w(TAG, "Cannot apply badge update: context is null");
                 }
-                Log.d(TAG, "Persisted badge_update total=" + total);
             }
+        }
+
+        if ("badge_update".equals(type)) {
+            isHandled = true;
         } else if (type.equals("incoming_phone_call") || type.equals("incoming_video_call")) {
             Context ctx = applicationContext;
             if (ctx == null) {
