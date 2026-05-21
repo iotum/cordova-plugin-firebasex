@@ -6,19 +6,9 @@
 static NSString *const kLastBadgeTimestampKey = @"FirebaseBadgeMessageReceiver_lastBadgeTimestampMs";
 
 /**
- * Extracts the badge timestamp_ms from the payload. Looks for it at the top
- * level first (for dedicated badge_update messages) then inside badge_counts
- * (for piggyback badge data on other payload types).
+ * Extracts the badge timestamp_ms from badge_counts in the payload.
  */
-- (long long)badgeTimestampMsFromPayload:(NSDictionary *)payload type:(NSString *)type {
-    if ([@"badge_update" isEqualToString:type]) {
-        id tsValue = payload[@"timestamp_ms"];
-        if ([tsValue respondsToSelector:@selector(longLongValue)]) {
-            long long ts = [tsValue longLongValue];
-            if (ts > 0) return ts;
-        }
-    }
-
+- (long long)badgeTimestampMsFromPayload:(NSDictionary *)payload {
     id badgeCountsValue = payload[@"badge_counts"];
     if ([badgeCountsValue isKindOfClass:[NSDictionary class]]) {
         NSDictionary *badgeCounts = (NSDictionary *)badgeCountsValue;
@@ -60,12 +50,7 @@ static NSString *const kLastBadgeTimestampKey = @"FirebaseBadgeMessageReceiver_l
     }
 
     id totalValue = nil;
-    if (isBadgeUpdate) {
-        totalValue = payload[@"total"];
-        if (badgeCounts != nil && ![totalValue respondsToSelector:@selector(intValue)]) {
-            totalValue = badgeCounts[@"total"];
-        }
-    } else if (badgeCounts != nil) {
+    if (badgeCounts != nil) {
         totalValue = badgeCounts[@"total"];
     }
 
@@ -74,7 +59,7 @@ static NSString *const kLastBadgeTimestampKey = @"FirebaseBadgeMessageReceiver_l
     }
 
     // Check timestamp to avoid processing out-of-order badge updates
-    long long timestampMs = [self badgeTimestampMsFromPayload:payload type:type];
+    long long timestampMs = [self badgeTimestampMsFromPayload:payload];
     @synchronized ([FirebaseBadgeMessageReceiver class]) {
         if (timestampMs > 0) {
             long long lastTimestamp = 0;

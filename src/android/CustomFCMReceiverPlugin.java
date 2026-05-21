@@ -109,46 +109,23 @@ public class CustomFCMReceiverPlugin {
         }
     }
 
-    private static Integer getBadgeTotal(JSONObject payload, String type) {
-        Integer total = null;
-
-        if ("badge_update".equals(type)) {
-            int candidateTotal = payload.optInt("total", -1);
+    private static Integer getBadgeTotal(JSONObject payload) {
+        JSONObject badgeCounts = payload.optJSONObject("badge_counts");
+        if (badgeCounts != null) {
+            int candidateTotal = badgeCounts.optInt("total", -1);
             if (candidateTotal >= 0) {
-                total = candidateTotal;
+                return candidateTotal;
             }
         }
-
-        if (total == null) {
-            JSONObject badgeCounts = payload.optJSONObject("badge_counts");
-            if (badgeCounts != null) {
-                int candidateTotal = badgeCounts.optInt("total", -1);
-                if (candidateTotal >= 0) {
-                    total = candidateTotal;
-                }
-            }
-        }
-
-        return total;
+        return null;
     }
 
-    /**
-     * Extracts the badge timestamp_ms from the payload. Looks for it at the top
-     * level first (for dedicated badge_update messages) then inside badge_counts
-     * (for piggyback badge data on other payload types).
-     */
-    private static long getBadgeTimestampMs(JSONObject payload, String type) {
-        if ("badge_update".equals(type)) {
-            long ts = payload.optLong("timestamp_ms", 0);
-            if (ts > 0) return ts;
-        }
-
+    private static long getBadgeTimestampMs(JSONObject payload) {
         JSONObject badgeCounts = payload.optJSONObject("badge_counts");
         if (badgeCounts != null) {
             long ts = badgeCounts.optLong("timestamp_ms", 0);
             if (ts > 0) return ts;
         }
-
         return 0;
     }
 
@@ -164,9 +141,9 @@ public class CustomFCMReceiverPlugin {
         JSONObject payload = new JSONObject(payloadString);
 
         String type = payload.optString("type");
-        Integer badgeTotal = getBadgeTotal(payload, type);
+        Integer badgeTotal = getBadgeTotal(payload);
         if (badgeTotal != null) {
-            long timestampMs = getBadgeTimestampMs(payload, type);
+            long timestampMs = getBadgeTimestampMs(payload);
             // Only process if timestamp is newer than the last processed one (or if no timestamp provided).
             // Use compareAndSet loop for thread-safe atomic update.
             if (timestampMs > 0) {
