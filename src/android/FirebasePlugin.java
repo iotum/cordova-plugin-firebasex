@@ -149,6 +149,7 @@ public class FirebasePlugin extends CordovaPlugin {
     protected static Context applicationContext = null;
     private static Activity cordovaActivity = null;
     private static boolean pluginInitialized = false;
+    private static boolean pageFinished = false;
     private static ArrayList<String> pendingGlobalJS = null;
 
     protected static final String TAG = "FirebasePlugin";
@@ -593,6 +594,17 @@ public class FirebasePlugin extends CordovaPlugin {
         FirebasePlugin.tokenRefreshCallbackContext = null;
         FirebasePlugin.activityResultCallbackContext = null;
         FirebasePlugin.authResultCallbackContext = null;
+        pageFinished = false;
+    }
+
+    @Override
+    public Object onMessage(String id, Object data) {
+        // WebView JS bridge (cordova.js/firebase.js) isn't guaranteed loaded until the page finishes
+        if ("onPageFinished".equals(id)) {
+            pageFinished = true;
+            executePendingGlobalJavascript();
+        }
+        return null;
     }
 
     @Override
@@ -3754,7 +3766,7 @@ public class FirebasePlugin extends CordovaPlugin {
     }
 
     private void executeGlobalJavascript(final String jsString) {
-        if(pluginInitialized){
+        if(pluginInitialized && pageFinished){
             doExecuteGlobalJavascript(jsString);
         } else {
             if(pendingGlobalJS == null) {
@@ -3765,6 +3777,9 @@ public class FirebasePlugin extends CordovaPlugin {
     }
 
     private void executePendingGlobalJavascript() {
+        if(!pluginInitialized || !pageFinished){
+            return;
+        }
         if(pendingGlobalJS == null){
             Log.d(TAG, "No pending global JS calls");
             return;
