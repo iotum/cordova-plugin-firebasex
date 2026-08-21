@@ -174,9 +174,15 @@ public class CustomFCMReceiverPlugin {
             }
         }
 
+        // "phone_to_video" invites prompt to upgrade an existing/active session to video; they are not
+        // a new incoming call, so they must not be routed to Telecom (which would show the native
+        // Answer/Decline call UI). Let them fall through to the normal notification flow instead.
+        boolean isIncomingCallInvite = !payload.optBoolean("phone_to_video", false)
+                && (type.equals("incoming_phone_call") || type.equals("incoming_video_call"));
+
         if ("badge_update".equals(type)) {
             isHandled = true;
-        } else if (type.equals("incoming_phone_call") || type.equals("incoming_video_call")) {
+        } else if (isIncomingCallInvite) {
             Context ctx = applicationContext;
             if (ctx == null) {
                 Log.w(TAG, "Cannot handle call intent: context is null");
