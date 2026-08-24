@@ -149,7 +149,9 @@ public class FirebasePlugin extends CordovaPlugin {
     protected static Context applicationContext = null;
     private static Activity cordovaActivity = null;
     private static boolean pluginInitialized = false;
+    private static boolean pageFinished = false;
     private static ArrayList<String> pendingGlobalJS = null;
+    private static final Object pendingGlobalJSLock = new Object();
 
     protected static final String TAG = "FirebasePlugin";
     protected static final String JS_GLOBAL_NAMESPACE = "FirebasePlugin.";
@@ -270,7 +272,9 @@ public class FirebasePlugin extends CordovaPlugin {
                     defaultChannelName = getStringResource("default_notification_channel_name");
                     createDefaultChannel();
 
-                    pluginInitialized = true;
+                    synchronized (pendingGlobalJSLock) {
+                        pluginInitialized = true;
+                    }
                     executePendingGlobalJavascript();
 
                 } catch (Exception e) {
@@ -593,6 +597,21 @@ public class FirebasePlugin extends CordovaPlugin {
         FirebasePlugin.tokenRefreshCallbackContext = null;
         FirebasePlugin.activityResultCallbackContext = null;
         FirebasePlugin.authResultCallbackContext = null;
+        synchronized (pendingGlobalJSLock) {
+            pageFinished = false;
+        }
+    }
+
+    @Override
+    public Object onMessage(String id, Object data) {
+        // WebView JS bridge (cordova.js/firebase.js) isn't guaranteed loaded until the page finishes
+        if ("onPageFinished".equals(id)) {
+            synchronized (pendingGlobalJSLock) {
+                pageFinished = true;
+            }
+            executePendingGlobalJavascript();
+        }
+        return null;
     }
 
     @Override
@@ -3754,26 +3773,38 @@ public class FirebasePlugin extends CordovaPlugin {
     }
 
     private void executeGlobalJavascript(final String jsString) {
-        if(pluginInitialized){
-            doExecuteGlobalJavascript(jsString);
-        } else {
-            if(pendingGlobalJS == null) {
-                pendingGlobalJS = new ArrayList<>();
+        boolean ready;
+        synchronized (pendingGlobalJSLock) {
+            ready = pluginInitialized && pageFinished;
+            if(!ready) {
+                if(pendingGlobalJS == null) {
+                    pendingGlobalJS = new ArrayList<>();
+                }
+                pendingGlobalJS.add(jsString);
             }
-            pendingGlobalJS.add(jsString);
+        }
+        if(ready){
+            doExecuteGlobalJavascript(jsString);
         }
     }
 
     private void executePendingGlobalJavascript() {
-        if(pendingGlobalJS == null){
-            Log.d(TAG, "No pending global JS calls");
-            return;
+        ArrayList<String> jsToExecute;
+        synchronized (pendingGlobalJSLock) {
+            if(!pluginInitialized || !pageFinished){
+                return;
+            }
+            if(pendingGlobalJS == null){
+                Log.d(TAG, "No pending global JS calls");
+                return;
+            }
+            jsToExecute = pendingGlobalJS;
+            pendingGlobalJS = null;
         }
-        Log.d(TAG, "Executing "+pendingGlobalJS.size()+" pending global JS calls");
-        for(String jsString : pendingGlobalJS){
+        Log.d(TAG, "Executing "+jsToExecute.size()+" pending global JS calls");
+        for(String jsString : jsToExecute){
             doExecuteGlobalJavascript(jsString);
         }
-        pendingGlobalJS = null;
     }
 
     private void doExecuteGlobalJavascript(final String jsString) {
