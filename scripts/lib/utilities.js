@@ -4,6 +4,7 @@
 var fs = require('fs');
 var path = require("path");
 var parser = require('xml-js');
+var EventEmitter = require('node:events');
 
 var _configXml, _pluginXml, _context, _pluginVariables;
 
@@ -69,12 +70,16 @@ Utilities.getAppName = function(){
         const projectRoot = _context.opts.projectRoot;
         const platformPath = path.join(projectRoot, 'platforms', 'ios');
         const cordova_ios = require('cordova-ios');
-        const iosProject = new cordova_ios('ios', platformPath);
+        const iosProject = new cordova_ios('ios', platformPath, new EventEmitter());
 
-        return path.basename(iosProject.locations.xcodeCordovaProj);
+        return path.basename(iosProject.locations.xcodeCordovaProj, '.xcodeproj');
     }
     // other platforms
     return Utilities.parseConfigXml().widget.name._text.toString().trim();
+};
+
+Utilities.getProjectRoot = function(){
+    return _context.opts.projectRoot;
 };
 
 /**
