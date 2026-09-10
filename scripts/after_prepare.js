@@ -11,8 +11,10 @@ var fs = require('fs');
 var path = require("path");
 var execSync = require('child_process').execSync;
 var utilities = require("./lib/utilities");
+var EventEmitter = require('node:events');
+var cordovaIos = require('cordova-ios');
 
-var appName;
+var iosProject;
 var pluginVariables = {};
 
 var IOS_DIR = 'platforms/ios';
@@ -21,21 +23,25 @@ var PLUGIN_ID;
 
 var PLATFORM;
 
-var setupEnv = function(){
-    appName = utilities.getAppName();
+var setupEnv = function () {
+    var projectRoot = utilities.getProjectRoot();
+    var platformPath = path.join(projectRoot, IOS_DIR);
+    iosProject = new cordovaIos('ios', platformPath, new EventEmitter());
+
+    var iosAppPath = iosProject.locations.xcodeCordovaProj;
     PLUGIN_ID = utilities.getPluginId();
     PLATFORM = {
         IOS: {
             platformDir: IOS_DIR,
-            dest: IOS_DIR + '/' + appName + '/Resources/GoogleService-Info.plist',
+            dest: path.join(iosAppPath, 'Resources', 'GoogleService-Info.plist'),
             src: [
                 'GoogleService-Info.plist',
                 IOS_DIR + '/www/GoogleService-Info.plist',
                 'www/GoogleService-Info.plist'
             ],
-            appPlist: IOS_DIR + '/' + appName + '/' + appName + '-Info.plist',
-            entitlementsDebugPlist: IOS_DIR + '/' + appName + '/Entitlements-Debug.plist',
-            entitlementsReleasePlist: IOS_DIR + '/' + appName + '/Entitlements-Release.plist',
+            appPlist: path.join(iosAppPath, path.basename(iosAppPath) + '-Info.plist'),
+            entitlementsDebugPlist: path.join(iosAppPath, 'Entitlements-Debug.plist'),
+            entitlementsReleasePlist: path.join(iosAppPath, 'Entitlements-Release.plist'),
             podFile: IOS_DIR + '/Podfile'
         },
         ANDROID: {
